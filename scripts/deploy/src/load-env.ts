@@ -68,6 +68,7 @@ const validations = {
   TRANSFER_MANAGER_NON_COMPLIANT_ERC721_ADDRESS: optionalAddressOrFalseValidator(),
   TRANSFER_SELECTOR_NFT_ADDRESS: optionalAddressValidator(),
   TRANSFER_SELECTOR_NFT_OWNER_ADDRESS: addressValidator(),
+  ORDER_VALIDATOR_ADDRESS: optionalAddressValidator(),
 };
 
 const env = envalid.cleanEnv(process.env, validations);

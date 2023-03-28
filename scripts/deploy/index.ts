@@ -10,6 +10,8 @@ import deployLooksRareExchange from "./src/deploy-looks-rare-exchange";
 import deployTransferSelectorNFT from "./src/deploy-transfer-selector-nft";
 import updateTransferSelectorNFT from "./src/update-transfer-selector-nft";
 import transferOwnership from "./src/transfer-ownership";
+import deployOrderValidatorV1 from "./src/deploy-order-validator-v1";
+
 import env from "./src/load-env";
 
 async function main() {
@@ -59,6 +61,8 @@ async function main() {
   await transferOwnership(looksRareExchange, env.LOOKS_RARE_EXCHANGE_OWNER_ADDRESS);
   console.log("Transfer ownership of TransferSelectorNFT to:");
   await transferOwnership(transferSelectorNFT, env.TRANSFER_SELECTOR_NFT_OWNER_ADDRESS);
+
+  await deployOrderValidatorV1(looksRareExchange);
 
   console.log("DONE!");
 
