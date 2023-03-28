@@ -43,7 +43,7 @@ const config: HardhatUserConfig = {
         chainId: 99999,
         urls: {
           apiURL: "https://sandbox1.japanopenchain.org/api",
-          browserURL: "hhttps://sandbox1.japanopenchain.org/",
+          browserURL: "https://sandbox1.japanopenchain.org/",
         },
       },
     ],
