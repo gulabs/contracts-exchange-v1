@@ -13,6 +13,7 @@ import transferOwnership from "./src/transfer-ownership";
 import deployOrderValidatorV1 from "./src/deploy-order-validator-v1";
 
 import env from "./src/load-env";
+import { ethers } from "hardhat";
 
 async function main() {
   await preDeploy();
@@ -26,6 +27,8 @@ async function main() {
     strategyDutchAuction,
     strategyPrivateSale,
     strategyStandardSaleForFixedPrice,
+    strategyAnyItemFromCollectionForFixedPriceV1B,
+    strategyStandardSaleForFixedPriceV1B,
   } = await deployExecutionStrategy();
 
   await addStrategies({
@@ -35,6 +38,8 @@ async function main() {
     strategyDutchAuction,
     strategyPrivateSale,
     strategyStandardSaleForFixedPrice,
+    strategyAnyItemFromCollectionForFixedPriceV1B,
+    strategyStandardSaleForFixedPriceV1B,
   });
 
   const { royaltyFeeManager, royaltyFeeSetter } = await deployRoyaltySystem();
@@ -51,8 +56,28 @@ async function main() {
   await transferOwnership(currencyManager, env.CURRENCY_MANAGER_OWNER_ADDRESS);
   console.log("Transfer ownership of ExecutionManager to:");
   await transferOwnership(executionManager, env.EXECUTION_MANAGER_OWNER_ADDRESS);
-  console.log("Transfer ownership of StrategyDutchAuction to:");
-  await transferOwnership(strategyDutchAuction, env.STRATEGY_DUTCH_AUCTION_OWNER_ADDRESS);
+
+  if (strategyDutchAuction !== ethers.constants.AddressZero) {
+    console.log("Transfer ownership of StrategyDutchAuction to:");
+    await transferOwnership(strategyDutchAuction, env.STRATEGY_DUTCH_AUCTION_OWNER_ADDRESS);
+  }
+
+  if (strategyAnyItemFromCollectionForFixedPriceV1B !== ethers.constants.AddressZero) {
+    console.log("Transfer ownership of StrategyAnyItemFromCollectionForFixedPriceV1B to:");
+    await transferOwnership(
+      strategyAnyItemFromCollectionForFixedPriceV1B,
+      env.STRATEGY_ANY_ITEM_FROM_COLLECTION_FOR_FIXED_PRICE_V1B_OWNER_ADDRESS
+    );
+  }
+
+  if (strategyStandardSaleForFixedPriceV1B !== ethers.constants.AddressZero) {
+    console.log("Transfer ownership of StrategyStandardSaleForFixedPriceV1B to:");
+    await transferOwnership(
+      strategyStandardSaleForFixedPriceV1B,
+      env.STRATEGY_STANDARD_SALE_FOR_FIXED_PRICE_V1B_OWNER_ADDRESS
+    );
+  }
+
   console.log("Transfer ownership of RoyaltyFeeSetter to:");
   await transferOwnership(royaltyFeeSetter, env.ROYALTY_FEE_SETTER_OWNER_ADDRESS);
   console.log("Transfer ownership of RoyaltyFeeManager to:");

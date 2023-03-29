@@ -7,6 +7,8 @@ export default async function addStrategies({
   strategyDutchAuction,
   strategyPrivateSale,
   strategyStandardSaleForFixedPrice,
+  strategyAnyItemFromCollectionForFixedPriceV1B,
+  strategyStandardSaleForFixedPriceV1B,
 }: {
   executionManager: string;
   strategyAnyItemFromCollectionForFixedPrice: string;
@@ -14,6 +16,8 @@ export default async function addStrategies({
   strategyDutchAuction: string;
   strategyPrivateSale: string;
   strategyStandardSaleForFixedPrice: string;
+  strategyAnyItemFromCollectionForFixedPriceV1B: string;
+  strategyStandardSaleForFixedPriceV1B: string;
 }): Promise<void> {
   const ExecutionManager = await ethers.getContractFactory("ExecutionManager");
   const executionManager = ExecutionManager.attach(executionManagerAddress);
@@ -56,5 +60,21 @@ export default async function addStrategies({
       strategyStandardSaleForFixedPrice: ${strategyStandardSaleForFixedPrice}
     `);
     await executionManager.addStrategy(strategyStandardSaleForFixedPrice);
+  }
+
+  if (strategyAnyItemFromCollectionForFixedPriceV1B !== ethers.constants.AddressZero) {
+    console.log("\nAdd strategyAnyItemFromCollectionForFixedPriceV1B to ExecutionManager with following parameters:");
+    console.log(`
+      strategyAnyItemFromCollectionForFixedPriceV1B: ${strategyAnyItemFromCollectionForFixedPriceV1B}
+    `);
+    await executionManager.addStrategy(strategyAnyItemFromCollectionForFixedPriceV1B);
+  }
+
+  if (strategyStandardSaleForFixedPriceV1B !== ethers.constants.AddressZero) {
+    console.log("\nAdd strategyStandardSaleForFixedPriceV1B to ExecutionManager with following parameters:");
+    console.log(`
+      strategyStandardSaleForFixedPriceV1B: ${strategyStandardSaleForFixedPriceV1B}
+    `);
+    await executionManager.addStrategy(strategyStandardSaleForFixedPriceV1B);
   }
 }

@@ -72,4 +72,46 @@ export default async function preDeploy(): Promise<void> {
       throw new Error(`ROYALTY_FEE_MANAGER_ADDRESS should be a contract address`);
     }
   }
+
+  if (env.TRANSFER_MANAGER_ERC721_ADDRESS) {
+    if (!(await isContract(env.TRANSFER_MANAGER_ERC721_ADDRESS))) {
+      throw new Error(`TRANSFER_MANAGER_ERC721_ADDRESS should be a contract address`);
+    }
+  }
+
+  if (env.TRANSFER_MANAGER_ERC1155_ADDRESS) {
+    if (!(await isContract(env.TRANSFER_MANAGER_ERC1155_ADDRESS))) {
+      throw new Error(`TRANSFER_MANAGER_ERC1155_ADDRESS should be a contract address`);
+    }
+  }
+
+  if (env.TRANSFER_MANAGER_NON_COMPLIANT_ERC721_ADDRESS) {
+    if (!(await isContract(env.TRANSFER_MANAGER_NON_COMPLIANT_ERC721_ADDRESS))) {
+      throw new Error(`TRANSFER_MANAGER_NON_COMPLIANT_ERC721_ADDRESS should be a contract address`);
+    }
+  }
+
+  if (env.TRANSFER_SELECTOR_NFT_ADDRESS) {
+    if (!(await isContract(env.TRANSFER_SELECTOR_NFT_ADDRESS))) {
+      throw new Error(`TRANSFER_SELECTOR_NFT_ADDRESS should be a contract address`);
+    }
+  }
+
+  if (env.ORDER_VALIDATOR_ADDRESS) {
+    if (!(await isContract(env.ORDER_VALIDATOR_ADDRESS))) {
+      throw new Error(`ORDER_VALIDATOR_ADDRESS should be a contract address`);
+    }
+  }
+
+  if (env.STRATEGY_ANY_ITEM_FROM_COLLECTION_FOR_FIXED_PRICE_V1B_ADDRESS) {
+    if (!(await isContract(env.STRATEGY_ANY_ITEM_FROM_COLLECTION_FOR_FIXED_PRICE_V1B_ADDRESS))) {
+      throw new Error(`STRATEGY_ANY_ITEM_FROM_COLLECTION_FOR_FIXED_PRICE_V1B_ADDRESS should be a contract address`);
+    }
+  }
+
+  if (env.STRATEGY_STANDARD_SALE_FOR_FIXED_PRICE_V1B_ADDRESS) {
+    if (!(await isContract(env.STRATEGY_STANDARD_SALE_FOR_FIXED_PRICE_V1B_ADDRESS))) {
+      throw new Error(`STRATEGY_STANDARD_SALE_FOR_FIXED_PRICE_V1B_ADDRESS should be a contract address`);
+    }
+  }
 }

@@ -7,6 +7,8 @@ export default async function deployExecutionStrategy(): Promise<{
   strategyDutchAuction: string;
   strategyPrivateSale: string;
   strategyStandardSaleForFixedPrice: string;
+  strategyAnyItemFromCollectionForFixedPriceV1B: string;
+  strategyStandardSaleForFixedPriceV1B: string;
 }> {
   // 1. StrategyAnyItemFromCollectionForFixedPrice
   let strategyAnyItemFromCollectionForFixedPrice =
@@ -102,7 +104,10 @@ export default async function deployExecutionStrategy(): Promise<{
   }
 
   // 5.StrategyStandardSaleForFixedPrice
-  let strategyStandardSaleForFixedPrice = env.STRATEGY_STANDARD_SALE_FOR_FIXED_PRICE_ADDRESS;
+  let strategyStandardSaleForFixedPrice =
+    env.STRATEGY_STANDARD_SALE_FOR_FIXED_PRICE_ADDRESS === false
+      ? ethers.constants.AddressZero
+      : env.STRATEGY_STANDARD_SALE_FOR_FIXED_PRICE_ADDRESS;
 
   if (!strategyStandardSaleForFixedPrice) {
     console.log("\nDeploy StrategyStandardSaleForFixedPrice with following parameters:");
@@ -121,11 +126,65 @@ export default async function deployExecutionStrategy(): Promise<{
     console.log("Using exist StrategyStandardSaleForFixedPrice:", strategyStandardSaleForFixedPrice);
   }
 
+  // 6.StrategyStandardSaleForFixedPrice
+  let strategyAnyItemFromCollectionForFixedPriceV1B =
+    env.STRATEGY_ANY_ITEM_FROM_COLLECTION_FOR_FIXED_PRICE_V1B_ADDRESS === false
+      ? ethers.constants.AddressZero
+      : env.STRATEGY_ANY_ITEM_FROM_COLLECTION_FOR_FIXED_PRICE_V1B_ADDRESS;
+
+  if (!strategyAnyItemFromCollectionForFixedPriceV1B) {
+    console.log("\nDeploy StrategyAnyItemFromCollectionForFixedPriceV1B with following parameters:");
+    console.log(`
+      STRATEGY_ANY_ITEM_FROM_COLLECTION_FOR_FIXED_PRICE_V1B_ADDRESS: ${env.STRATEGY_ANY_ITEM_FROM_COLLECTION_FOR_FIXED_PRICE_V1B_ADDRESS}
+    `);
+    const StrategyAnyItemFromCollectionForFixedPriceV1B = await ethers.getContractFactory(
+      "StrategyAnyItemFromCollectionForFixedPriceV1B"
+    );
+    const strategyAnyItemFromCollectionForFixedPriceV1B_ = await StrategyAnyItemFromCollectionForFixedPriceV1B.deploy();
+    await strategyAnyItemFromCollectionForFixedPriceV1B_.deployed();
+
+    strategyAnyItemFromCollectionForFixedPriceV1B = strategyAnyItemFromCollectionForFixedPriceV1B_.address;
+    console.log(
+      "StrategyAnyItemFromCollectionForFixedPriceV1B deployed to:",
+      strategyAnyItemFromCollectionForFixedPriceV1B
+    );
+  } else {
+    console.log(
+      "Using exist StrategyAnyItemFromCollectionForFixedPriceV1B:",
+      strategyAnyItemFromCollectionForFixedPriceV1B
+    );
+  }
+
+  // 7.StrategyStandardSaleForFixedPriceV1B
+  let strategyStandardSaleForFixedPriceV1B =
+    env.STRATEGY_STANDARD_SALE_FOR_FIXED_PRICE_V1B_ADDRESS === false
+      ? ethers.constants.AddressZero
+      : env.STRATEGY_STANDARD_SALE_FOR_FIXED_PRICE_V1B_ADDRESS;
+
+  if (!strategyStandardSaleForFixedPriceV1B) {
+    console.log("\nDeploy StrategyStandardSaleForFixedPriceV1B with following parameters:");
+    console.log(`
+      STRATEGY_STANDARD_SALE_FOR_FIXED_PRICE_V1B_ADDRESS: ${env.STRATEGY_STANDARD_SALE_FOR_FIXED_PRICE_V1B_ADDRESS}
+    `);
+    const StrategyStandardSaleForFixedPriceV1B = await ethers.getContractFactory(
+      "StrategyStandardSaleForFixedPriceV1B"
+    );
+    const strategyStandardSaleForFixedPriceV1B_ = await StrategyStandardSaleForFixedPriceV1B.deploy();
+    await strategyStandardSaleForFixedPriceV1B_.deployed();
+
+    strategyStandardSaleForFixedPriceV1B = strategyStandardSaleForFixedPriceV1B_.address;
+    console.log("StrategyStandardSaleForFixedPriceV1B deployed to:", strategyStandardSaleForFixedPriceV1B);
+  } else {
+    console.log("Using exist StrategyStandardSaleForFixedPriceV1B:", strategyStandardSaleForFixedPriceV1B);
+  }
+
   return {
     strategyAnyItemFromCollectionForFixedPrice,
     strategyAnyItemInASetForFixedPrice,
     strategyDutchAuction,
     strategyPrivateSale,
     strategyStandardSaleForFixedPrice,
+    strategyAnyItemFromCollectionForFixedPriceV1B,
+    strategyStandardSaleForFixedPriceV1B,
   };
 }

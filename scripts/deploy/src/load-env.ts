@@ -68,7 +68,14 @@ const validations = {
   TRANSFER_MANAGER_NON_COMPLIANT_ERC721_ADDRESS: optionalAddressOrFalseValidator(),
   TRANSFER_SELECTOR_NFT_ADDRESS: optionalAddressValidator(),
   TRANSFER_SELECTOR_NFT_OWNER_ADDRESS: addressValidator(),
-  ORDER_VALIDATOR_ADDRESS: optionalAddressValidator(),
+  ORDER_VALIDATOR_ADDRESS: optionalAddressOrFalseValidator(),
+  ORDER_VALIDATOR_V1B_ADDRESS: optionalAddressOrFalseValidator(),
+
+  STRATEGY_ANY_ITEM_FROM_COLLECTION_FOR_FIXED_PRICE_V1B_ADDRESS: optionalAddressOrFalseValidator(),
+  STRATEGY_ANY_ITEM_FROM_COLLECTION_FOR_FIXED_PRICE_V1B_OWNER_ADDRESS: addressValidator(),
+
+  STRATEGY_STANDARD_SALE_FOR_FIXED_PRICE_V1B_ADDRESS: optionalAddressOrFalseValidator(),
+  STRATEGY_STANDARD_SALE_FOR_FIXED_PRICE_V1B_OWNER_ADDRESS: addressValidator(),
 };
 
 const env = envalid.cleanEnv(process.env, validations);
