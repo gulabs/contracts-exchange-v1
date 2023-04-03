@@ -429,6 +429,143 @@ describe("LooksRare Exchange", () => {
         await looksRareExchange.isUserOrderNonceExecutedOrCancelled(makerBidUser.address, makerBidOrder.nonce)
       );
     });
+
+    it("Standard Order/ERC721/ERC20 only - MakerBid order is matched by TakerAsk order", async () => {
+      const makerBidUser = accounts[2];
+      const takerAskUser = accounts[1];
+
+      // add 2nd currency into white list
+      await currencyManager.connect(admin).addCurrency(mockUSDT.address);
+
+      // Each users mints 1M USDT
+      await mockUSDT.connect(makerBidUser).mint(makerBidUser.address, parseEther("1000000"));
+
+      // Set approval for USDT
+      await mockUSDT.connect(makerBidUser).approve(looksRareExchange.address, constants.MaxUint256);
+
+      const makerBidOrder = await createMakerOrder({
+        isOrderAsk: false,
+        signer: makerBidUser.address,
+        collection: mockERC721.address,
+        tokenId: constants.Zero,
+        price: parseEther("3"),
+        amount: constants.One,
+        strategy: strategyStandardSaleForFixedPrice.address,
+        currency: mockUSDT.address,
+        nonce: constants.Zero,
+        startTime: startTimeOrder,
+        endTime: endTimeOrder,
+        minPercentageToAsk: constants.Zero,
+        params: defaultAbiCoder.encode([], []),
+        signerUser: makerBidUser,
+        verifyingContract: looksRareExchange.address,
+      });
+
+      await assertOrderValid(makerBidOrder, orderValidatorV1);
+
+      const takerAskOrder = createTakerOrder({
+        isOrderAsk: true,
+        taker: takerAskUser.address,
+        tokenId: constants.Zero,
+        price: makerBidOrder.price,
+        minPercentageToAsk: constants.Zero,
+        params: defaultAbiCoder.encode([], []),
+      });
+
+      const tx = await looksRareExchange.connect(takerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder);
+      await expect(tx)
+        .to.emit(looksRareExchange, "TakerAsk")
+        .withArgs(
+          computeOrderHash(makerBidOrder),
+          makerBidOrder.nonce,
+          takerAskUser.address,
+          makerBidUser.address,
+          strategyStandardSaleForFixedPrice.address,
+          makerBidOrder.currency,
+          makerBidOrder.collection,
+          takerAskOrder.tokenId,
+          makerBidOrder.amount,
+          makerBidOrder.price
+        );
+
+      await assertErrorCode(makerBidOrder, NONCE_EXECUTED_OR_CANCELLED, orderValidatorV1);
+      assert.equal(await mockERC721.ownerOf("0"), makerBidUser.address);
+      assert.isTrue(
+        await looksRareExchange.isUserOrderNonceExecutedOrCancelled(makerBidUser.address, makerBidOrder.nonce)
+      );
+    });
+
+    it("Standard Order/ERC721/ERC20 only - MakerAsk order is matched by TakerBid order", async () => {
+      const makerAskUser = accounts[1];
+      const takerBidUser = accounts[2];
+
+      // add 2nd currency into white list
+      await currencyManager.connect(admin).addCurrency(mockUSDT.address);
+
+      // Each users mints 1M USDT
+      await mockUSDT.connect(takerBidUser).mint(takerBidUser.address, parseEther("1000000"));
+
+      // Set approval for USDT
+      await mockUSDT.connect(takerBidUser).approve(looksRareExchange.address, constants.MaxUint256);
+
+      const makerAskOrder = await createMakerOrder({
+        isOrderAsk: true,
+        signer: makerAskUser.address,
+        collection: mockERC721.address,
+        tokenId: constants.Zero,
+        price: parseEther("3"),
+        amount: constants.One,
+        strategy: strategyStandardSaleForFixedPrice.address,
+        currency: mockUSDT.address,
+        nonce: constants.Zero,
+        startTime: startTimeOrder,
+        endTime: endTimeOrder,
+        minPercentageToAsk: constants.Zero,
+        params: defaultAbiCoder.encode([], []),
+        signerUser: makerAskUser,
+        verifyingContract: looksRareExchange.address,
+      });
+
+      // Order is worth 3 USDT
+      const expectedBalanceInUSDT = BigNumber.from((await mockUSDT.balanceOf(takerBidUser.address)).toString()).sub(
+        BigNumber.from(parseEther("3"))
+      );
+
+      await assertOrderValid(makerAskOrder, orderValidatorV1);
+
+      const takerBidOrder: TakerOrder = {
+        isOrderAsk: false,
+        taker: takerBidUser.address,
+        tokenId: makerAskOrder.tokenId,
+        price: makerAskOrder.price,
+        minPercentageToAsk: constants.Zero,
+        params: defaultAbiCoder.encode([], []),
+      };
+
+      const tx = await looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
+      await expect(tx)
+        .to.emit(looksRareExchange, "TakerBid")
+        .withArgs(
+          computeOrderHash(makerAskOrder),
+          makerAskOrder.nonce,
+          takerBidUser.address,
+          makerAskUser.address,
+          strategyStandardSaleForFixedPrice.address,
+          makerAskOrder.currency,
+          makerAskOrder.collection,
+          takerBidOrder.tokenId,
+          makerAskOrder.amount,
+          makerAskOrder.price
+        );
+
+      await assertErrorCode(makerAskOrder, NONCE_EXECUTED_OR_CANCELLED, orderValidatorV1);
+      assert.isTrue(
+        await looksRareExchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce)
+      );
+
+      // Check balance of USDT is same as expected
+      assert.deepEqual(expectedBalanceInUSDT, await mockUSDT.balanceOf(takerBidUser.address));
+    });
   });
 
   describe("#2 - EIP1271 wallet orders", async () => {
