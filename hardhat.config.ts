@@ -9,6 +9,8 @@ import "hardhat-gas-reporter";
 import "solidity-coverage";
 import "dotenv/config";
 
+import env from "./scripts/deploy/src/load-env";
+
 task("accounts", "Prints the list of accounts", async (_args, hre) => {
   const accounts = await hre.ethers.getSigners();
   accounts.forEach(async (account) => console.info(account.address));
@@ -26,9 +28,25 @@ const config: HardhatUserConfig = {
       },
       gasPrice: "auto",
     },
+    gusandbox: {
+      url: `https://sandbox1.japanopenchain.org:8545/`,
+      accounts: [env.DEPLOYMENT_ACCOUNT_PRIVATE_KEY],
+    },
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_KEY,
+    apiKey: {
+      gusandbox: "gusandbox-api-key",
+    },
+    customChains: [
+      {
+        network: "gusandbox",
+        chainId: 99999,
+        urls: {
+          apiURL: "https://sandbox1.japanopenchain.org/api",
+          browserURL: "https://sandbox1.japanopenchain.org/",
+        },
+      },
+    ],
   },
   solidity: {
     compilers: [
