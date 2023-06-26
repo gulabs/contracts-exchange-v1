@@ -1,7 +1,6 @@
 import preDeploy from "./src/pre-deploy";
 import deployWETH from "./src/deploy-weth";
 import deployCurrencyManager from "./src/deploy-currency-manager";
-import addWETHCurrency from "./src/add-weth-currency";
 import deployExecutionManager from "./src/deploy-execution-manager";
 import deployExecutionStrategy from "./src/deploy-execution-strategy";
 import addStrategies from "./src/add-strategies";
@@ -14,12 +13,13 @@ import deployOrderValidatorV1 from "./src/deploy-order-validator-v1";
 
 import env from "./src/load-env";
 import { ethers } from "hardhat";
+import addCurrencies from "./src/add-currencies";
 
 async function main() {
   await preDeploy();
   const weth = await deployWETH();
   const currencyManager = await deployCurrencyManager();
-  await addWETHCurrency(currencyManager, weth);
+  await addCurrencies(currencyManager, { weth });
   const executionManager = await deployExecutionManager();
   const {
     strategyAnyItemFromCollectionForFixedPrice,
