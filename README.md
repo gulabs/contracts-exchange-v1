@@ -38,3 +38,25 @@ git submodule update --init --recursive
 ```shell
 yarn
 ```
+
+### Test
+
+```shell
+yarn test
+```
+
+### Deploy
+
+- Modify `.env` in `scripts/deploy`
+- Deploy
+
+```shell
+yarn deploy # hardhat node
+yarn deploy --network gusandbox # gusandbox
+```
+
+### Verify contracts
+
+```shell
+npx hardhat verify --network gusandbox <address> <params>
+```

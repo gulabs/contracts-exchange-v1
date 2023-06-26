@@ -20,7 +20,7 @@ export default async function deployExchange({
     weth: ${weth},
     FEE_RECEIPT_ADDRESS: ${env.FEE_RECEIPT_ADDRESS}
   `);
-  const Exchange = await ethers.getContractFactory("GuNFTMarketplaceExchange");
+  const Exchange = await ethers.getContractFactory("GUNftMarketplaceExchange");
   const exchange = await Exchange.deploy(
     currencyManager,
     executionManager,

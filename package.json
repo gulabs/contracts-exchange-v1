@@ -44,7 +44,8 @@
     "test:gas": "REPORT_GAS=true hardhat test",
     "test:forge": "forge test",
     "test:coverage": "hardhat coverage && hardhat compile --force",
-    "release": "release-it"
+    "release": "release-it",
+    "deploy": "hardhat run scripts/deploy"
   },
   "devDependencies": {
     "@commitlint/cli": "^16.2.3",

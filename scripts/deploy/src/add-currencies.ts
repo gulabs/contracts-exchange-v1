@@ -12,12 +12,4 @@ export default async function addCurrencies(currencyManager: string, { weth }: {
     `);
     await currencyManager_.addCurrency(weth);
   }
-
-  if (env.SHOULD_ADD_WETH_CURRENCY) {
-    console.log("\nAdd WETH currency to CurrencyManager with following parameters:");
-    console.log(`
-      weth: ${weth}
-    `);
-    await currencyManager_.addCurrency(weth);
-  }
 }
