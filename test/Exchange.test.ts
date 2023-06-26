@@ -28,7 +28,7 @@ import { assertErrorCode, assertOrderValid } from "./helpers/order-validation-he
 
 const { defaultAbiCoder, parseEther } = utils;
 
-describe("LooksRare Exchange", () => {
+describe("Exchange", () => {
   // Mock contracts
   let mockUSDT: Contract;
   let mockERC721: Contract;
@@ -46,7 +46,7 @@ describe("LooksRare Exchange", () => {
   let royaltyFeeManager: Contract;
   let royaltyFeeRegistry: Contract;
   let royaltyFeeSetter: Contract;
-  let looksRareExchange: Contract;
+  let exchange: Contract;
   let orderValidatorV1: Contract;
 
   // Strategy contracts (used for this test file)
@@ -82,7 +82,7 @@ describe("LooksRare Exchange", () => {
       transferManagerERC721,
       transferManagerERC1155,
       transferManagerNonCompliantERC721,
-      looksRareExchange,
+      exchange,
       strategyStandardSaleForFixedPrice,
       ,
       ,
@@ -99,20 +99,20 @@ describe("LooksRare Exchange", () => {
       mockERC721,
       mockERC721WithRoyalty,
       mockERC1155,
-      looksRareExchange,
+      exchange,
       transferManagerERC721,
       transferManagerERC1155
     );
 
     // Verify the domain separator is properly computed
-    assert.equal(await looksRareExchange.DOMAIN_SEPARATOR(), computeDomainSeparator(looksRareExchange.address));
+    assert.equal(await exchange.DOMAIN_SEPARATOR(), computeDomainSeparator(exchange.address));
 
     // Set up defaults startTime/endTime (for orders)
     startTimeOrder = BigNumber.from((await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp);
     endTimeOrder = startTimeOrder.add(BigNumber.from("1000"));
 
     const OrderValidatorV1 = await ethers.getContractFactory("OrderValidatorV1");
-    orderValidatorV1 = await OrderValidatorV1.deploy(looksRareExchange.address);
+    orderValidatorV1 = await OrderValidatorV1.deploy(exchange.address);
     await orderValidatorV1.deployed();
   });
 
@@ -136,7 +136,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertOrderValid(makerAskOrder, orderValidatorV1);
@@ -150,14 +150,14 @@ describe("LooksRare Exchange", () => {
         params: defaultAbiCoder.encode([], []),
       });
 
-      const tx = await looksRareExchange
+      const tx = await exchange
         .connect(takerBidUser)
         .matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
           value: takerBidOrder.price,
         });
 
       await expect(tx)
-        .to.emit(looksRareExchange, "TakerBid")
+        .to.emit(exchange, "TakerBid")
         .withArgs(
           computeOrderHash(makerAskOrder),
           makerAskOrder.nonce,
@@ -174,13 +174,11 @@ describe("LooksRare Exchange", () => {
       await assertErrorCode(makerAskOrder, NONCE_EXECUTED_OR_CANCELLED, orderValidatorV1);
 
       assert.equal(await mockERC721.ownerOf("0"), takerBidUser.address);
-      assert.isTrue(
-        await looksRareExchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce)
-      );
+      assert.isTrue(await exchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce));
 
       // Orders that have been executed cannot be matched again
       await expect(
-        looksRareExchange.connect(takerBidUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
+        exchange.connect(takerBidUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
           value: takerBidOrder.price,
         })
       ).to.be.revertedWith("Order: Matching order expired");
@@ -205,7 +203,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertOrderValid(makerAskOrder, orderValidatorV1);
@@ -224,14 +222,14 @@ describe("LooksRare Exchange", () => {
         BigNumber.from(parseEther("1"))
       );
 
-      const tx = await looksRareExchange
+      const tx = await exchange
         .connect(takerBidUser)
         .matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
           value: parseEther("2"),
         });
 
       await expect(tx)
-        .to.emit(looksRareExchange, "TakerBid")
+        .to.emit(exchange, "TakerBid")
         .withArgs(
           computeOrderHash(makerAskOrder),
           makerAskOrder.nonce,
@@ -248,9 +246,7 @@ describe("LooksRare Exchange", () => {
       await assertErrorCode(makerAskOrder, NONCE_EXECUTED_OR_CANCELLED, orderValidatorV1);
 
       assert.equal(await mockERC721.ownerOf("0"), takerBidUser.address);
-      assert.isTrue(
-        await looksRareExchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce)
-      );
+      assert.isTrue(await exchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce));
 
       // Check balance of WETH is same as expected
       assert.deepEqual(expectedBalanceInWETH, await weth.balanceOf(takerBidUser.address));
@@ -275,7 +271,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertOrderValid(makerAskOrder, orderValidatorV1);
@@ -289,14 +285,14 @@ describe("LooksRare Exchange", () => {
         params: defaultAbiCoder.encode([], []),
       });
 
-      const tx = await looksRareExchange
+      const tx = await exchange
         .connect(takerBidUser)
         .matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
           value: takerBidOrder.price,
         });
 
       await expect(tx)
-        .to.emit(looksRareExchange, "TakerBid")
+        .to.emit(exchange, "TakerBid")
         .withArgs(
           computeOrderHash(makerAskOrder),
           makerAskOrder.nonce,
@@ -311,9 +307,7 @@ describe("LooksRare Exchange", () => {
         );
 
       await assertErrorCode(makerAskOrder, NONCE_EXECUTED_OR_CANCELLED, orderValidatorV1);
-      assert.isTrue(
-        await looksRareExchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce)
-      );
+      assert.isTrue(await exchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce));
 
       // User 2 had minted 2 tokenId=1 so he has 4
       assert.equal((await mockERC1155.balanceOf(takerBidUser.address, "1")).toString(), "4");
@@ -338,7 +332,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerBidUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertOrderValid(makerBidOrder, orderValidatorV1);
@@ -352,9 +346,9 @@ describe("LooksRare Exchange", () => {
         params: defaultAbiCoder.encode([], []),
       });
 
-      const tx = await looksRareExchange.connect(takerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder);
+      const tx = await exchange.connect(takerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder);
       await expect(tx)
-        .to.emit(looksRareExchange, "TakerAsk")
+        .to.emit(exchange, "TakerAsk")
         .withArgs(
           computeOrderHash(makerBidOrder),
           makerBidOrder.nonce,
@@ -370,9 +364,7 @@ describe("LooksRare Exchange", () => {
 
       await assertErrorCode(makerBidOrder, NONCE_EXECUTED_OR_CANCELLED, orderValidatorV1);
       assert.equal(await mockERC721.ownerOf("0"), makerBidUser.address);
-      assert.isTrue(
-        await looksRareExchange.isUserOrderNonceExecutedOrCancelled(makerBidUser.address, makerBidOrder.nonce)
-      );
+      assert.isTrue(await exchange.isUserOrderNonceExecutedOrCancelled(makerBidUser.address, makerBidOrder.nonce));
     });
 
     it("Standard Order/ERC1155/WETH only - MakerBid order is matched by TakerAsk order", async () => {
@@ -394,7 +386,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerBidUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertOrderValid(makerBidOrder, orderValidatorV1);
@@ -408,9 +400,9 @@ describe("LooksRare Exchange", () => {
         params: defaultAbiCoder.encode([], []),
       });
 
-      const tx = await looksRareExchange.connect(takerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder);
+      const tx = await exchange.connect(takerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder);
       await expect(tx)
-        .to.emit(looksRareExchange, "TakerAsk")
+        .to.emit(exchange, "TakerAsk")
         .withArgs(
           computeOrderHash(makerBidOrder),
           makerBidOrder.nonce,
@@ -425,9 +417,7 @@ describe("LooksRare Exchange", () => {
         );
 
       await assertErrorCode(makerBidOrder, NONCE_EXECUTED_OR_CANCELLED, orderValidatorV1);
-      assert.isTrue(
-        await looksRareExchange.isUserOrderNonceExecutedOrCancelled(makerBidUser.address, makerBidOrder.nonce)
-      );
+      assert.isTrue(await exchange.isUserOrderNonceExecutedOrCancelled(makerBidUser.address, makerBidOrder.nonce));
     });
 
     it("Standard Order/ERC721/ERC20 only - MakerBid order is matched by TakerAsk order", async () => {
@@ -441,7 +431,7 @@ describe("LooksRare Exchange", () => {
       await mockUSDT.connect(makerBidUser).mint(makerBidUser.address, parseEther("1000000"));
 
       // Set approval for USDT
-      await mockUSDT.connect(makerBidUser).approve(looksRareExchange.address, constants.MaxUint256);
+      await mockUSDT.connect(makerBidUser).approve(exchange.address, constants.MaxUint256);
 
       const makerBidOrder = await createMakerOrder({
         isOrderAsk: false,
@@ -458,7 +448,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerBidUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertOrderValid(makerBidOrder, orderValidatorV1);
@@ -472,9 +462,9 @@ describe("LooksRare Exchange", () => {
         params: defaultAbiCoder.encode([], []),
       });
 
-      const tx = await looksRareExchange.connect(takerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder);
+      const tx = await exchange.connect(takerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder);
       await expect(tx)
-        .to.emit(looksRareExchange, "TakerAsk")
+        .to.emit(exchange, "TakerAsk")
         .withArgs(
           computeOrderHash(makerBidOrder),
           makerBidOrder.nonce,
@@ -490,9 +480,7 @@ describe("LooksRare Exchange", () => {
 
       await assertErrorCode(makerBidOrder, NONCE_EXECUTED_OR_CANCELLED, orderValidatorV1);
       assert.equal(await mockERC721.ownerOf("0"), makerBidUser.address);
-      assert.isTrue(
-        await looksRareExchange.isUserOrderNonceExecutedOrCancelled(makerBidUser.address, makerBidOrder.nonce)
-      );
+      assert.isTrue(await exchange.isUserOrderNonceExecutedOrCancelled(makerBidUser.address, makerBidOrder.nonce));
     });
 
     it("Standard Order/ERC721/ERC20 only - MakerAsk order is matched by TakerBid order", async () => {
@@ -506,7 +494,7 @@ describe("LooksRare Exchange", () => {
       await mockUSDT.connect(takerBidUser).mint(takerBidUser.address, parseEther("1000000"));
 
       // Set approval for USDT
-      await mockUSDT.connect(takerBidUser).approve(looksRareExchange.address, constants.MaxUint256);
+      await mockUSDT.connect(takerBidUser).approve(exchange.address, constants.MaxUint256);
 
       const makerAskOrder = await createMakerOrder({
         isOrderAsk: true,
@@ -523,7 +511,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       // Order is worth 3 USDT
@@ -542,9 +530,9 @@ describe("LooksRare Exchange", () => {
         params: defaultAbiCoder.encode([], []),
       };
 
-      const tx = await looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
+      const tx = await exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
       await expect(tx)
-        .to.emit(looksRareExchange, "TakerBid")
+        .to.emit(exchange, "TakerBid")
         .withArgs(
           computeOrderHash(makerAskOrder),
           makerAskOrder.nonce,
@@ -559,9 +547,7 @@ describe("LooksRare Exchange", () => {
         );
 
       await assertErrorCode(makerAskOrder, NONCE_EXECUTED_OR_CANCELLED, orderValidatorV1);
-      assert.isTrue(
-        await looksRareExchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce)
-      );
+      assert.isTrue(await exchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce));
 
       // Check balance of USDT is same as expected
       assert.deepEqual(expectedBalanceInUSDT, await mockUSDT.balanceOf(takerBidUser.address));
@@ -580,7 +566,7 @@ describe("LooksRare Exchange", () => {
       await weth.connect(userSigningThroughContract).transfer(mockSignerContract.address, parseEther("1"));
       await mockSignerContract
         .connect(userSigningThroughContract)
-        .approveERC20ToBeSpent(weth.address, looksRareExchange.address);
+        .approveERC20ToBeSpent(weth.address, exchange.address);
 
       const makerBidOrder = await createMakerOrder({
         isOrderAsk: false,
@@ -597,7 +583,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: userSigningThroughContract,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertOrderValid(makerBidOrder, orderValidatorV1);
@@ -611,9 +597,9 @@ describe("LooksRare Exchange", () => {
         params: defaultAbiCoder.encode([], []),
       });
 
-      const tx = await looksRareExchange.connect(takerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder);
+      const tx = await exchange.connect(takerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder);
       await expect(tx)
-        .to.emit(looksRareExchange, "TakerAsk")
+        .to.emit(exchange, "TakerAsk")
         .withArgs(
           computeOrderHash(makerBidOrder),
           makerBidOrder.nonce,
@@ -631,7 +617,7 @@ describe("LooksRare Exchange", () => {
       await assertErrorCode(makerBidOrder, NONCE_EXECUTED_OR_CANCELLED, orderValidatorV1);
       assert.equal(await mockERC721.ownerOf("1"), mockSignerContract.address);
       assert.isTrue(
-        await looksRareExchange.isUserOrderNonceExecutedOrCancelled(mockSignerContract.address, makerBidOrder.nonce)
+        await exchange.isUserOrderNonceExecutedOrCancelled(mockSignerContract.address, makerBidOrder.nonce)
       );
 
       // Withdraw it back
@@ -669,7 +655,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: userSigningThroughContract,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertOrderValid(makerAskOrder, orderValidatorV1);
@@ -683,9 +669,9 @@ describe("LooksRare Exchange", () => {
         params: defaultAbiCoder.encode([], []),
       });
 
-      const tx = await looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
+      const tx = await exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
       await expect(tx)
-        .to.emit(looksRareExchange, "TakerBid")
+        .to.emit(exchange, "TakerBid")
         .withArgs(
           computeOrderHash(makerAskOrder),
           makerAskOrder.nonce,
@@ -704,7 +690,7 @@ describe("LooksRare Exchange", () => {
       assert.equal(await mockERC721.ownerOf("1"), takerBidUser.address);
       assert.deepEqual(await weth.balanceOf(mockSignerContract.address), takerBidOrder.price.mul("9800").div("10000"));
       assert.isTrue(
-        await looksRareExchange.isUserOrderNonceExecutedOrCancelled(mockSignerContract.address, makerAskOrder.nonce)
+        await exchange.isUserOrderNonceExecutedOrCancelled(mockSignerContract.address, makerAskOrder.nonce)
       );
 
       // Withdraw WETH back
@@ -739,7 +725,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertOrderValid(makerAskOrder, orderValidatorV1);
@@ -753,9 +739,9 @@ describe("LooksRare Exchange", () => {
         params: defaultAbiCoder.encode([], []),
       };
 
-      const tx = await looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
+      const tx = await exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
       await expect(tx)
-        .to.emit(looksRareExchange, "TakerBid")
+        .to.emit(exchange, "TakerBid")
         .withArgs(
           computeOrderHash(makerAskOrder),
           makerAskOrder.nonce,
@@ -772,7 +758,7 @@ describe("LooksRare Exchange", () => {
       const expectedRoyaltyAmount = BigNumber.from(takerBidOrder.price).mul("200").div("10000");
 
       await expect(tx)
-        .to.emit(looksRareExchange, "RoyaltyPayment")
+        .to.emit(exchange, "RoyaltyPayment")
         .withArgs(
           makerAskOrder.collection,
           takerBidOrder.tokenId,
@@ -783,9 +769,7 @@ describe("LooksRare Exchange", () => {
 
       await assertErrorCode(makerAskOrder, NONCE_EXECUTED_OR_CANCELLED, orderValidatorV1);
       assert.equal(await mockERC721WithRoyalty.ownerOf("0"), takerBidUser.address);
-      assert.isTrue(
-        await looksRareExchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce)
-      );
+      assert.isTrue(await exchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce));
       // Verify WETH balance of royalty collector has increased
       assert.deepEqual(await weth.balanceOf(royaltyCollector.address), expectedRoyaltyAmount);
     });
@@ -815,7 +799,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertOrderValid(makerAskOrder, orderValidatorV1);
@@ -829,14 +813,14 @@ describe("LooksRare Exchange", () => {
         params: defaultAbiCoder.encode([], []),
       };
 
-      const tx = await looksRareExchange
+      const tx = await exchange
         .connect(takerBidUser)
         .matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
           value: parseEther("3"),
         });
 
       await expect(tx)
-        .to.emit(looksRareExchange, "TakerBid")
+        .to.emit(exchange, "TakerBid")
         .withArgs(
           computeOrderHash(makerAskOrder),
           makerAskOrder.nonce,
@@ -853,7 +837,7 @@ describe("LooksRare Exchange", () => {
       const expectedRoyaltyAmount = BigNumber.from(takerBidOrder.price).mul("200").div("10000");
 
       await expect(tx)
-        .to.emit(looksRareExchange, "RoyaltyPayment")
+        .to.emit(exchange, "RoyaltyPayment")
         .withArgs(
           makerAskOrder.collection,
           takerBidOrder.tokenId,
@@ -864,9 +848,7 @@ describe("LooksRare Exchange", () => {
 
       await assertErrorCode(makerAskOrder, NONCE_EXECUTED_OR_CANCELLED, orderValidatorV1);
       assert.equal(await mockERC721WithRoyalty.ownerOf("0"), takerBidUser.address);
-      assert.isTrue(
-        await looksRareExchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce)
-      );
+      assert.isTrue(await exchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce));
       // Verify WETH balance of royalty collector has increased
       assert.deepEqual(await weth.balanceOf(royaltyCollector.address), expectedRoyaltyAmount);
     });
@@ -908,7 +890,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertOrderValid(makerAskOrder, orderValidatorV1);
@@ -922,10 +904,10 @@ describe("LooksRare Exchange", () => {
         params: defaultAbiCoder.encode([], []),
       };
 
-      tx = await looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
+      tx = await exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
 
       await expect(tx)
-        .to.emit(looksRareExchange, "TakerBid")
+        .to.emit(exchange, "TakerBid")
         .withArgs(
           computeOrderHash(makerAskOrder),
           makerAskOrder.nonce,
@@ -942,7 +924,7 @@ describe("LooksRare Exchange", () => {
       const expectedRoyaltyAmount = BigNumber.from(takerBidOrder.price).mul(fee).div("10000");
 
       await expect(tx)
-        .to.emit(looksRareExchange, "RoyaltyPayment")
+        .to.emit(exchange, "RoyaltyPayment")
         .withArgs(
           makerAskOrder.collection,
           takerBidOrder.tokenId,
@@ -953,9 +935,7 @@ describe("LooksRare Exchange", () => {
 
       await assertErrorCode(makerAskOrder, NONCE_EXECUTED_OR_CANCELLED, orderValidatorV1);
       assert.equal(await mockERC721.ownerOf("0"), takerBidUser.address);
-      assert.isTrue(
-        await looksRareExchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce)
-      );
+      assert.isTrue(await exchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce));
 
       // Verify WETH balance of royalty collector has increased
       assert.deepEqual(await weth.balanceOf(royaltyCollector.address), expectedRoyaltyAmount);
@@ -986,7 +966,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: BigNumber.from("9500"), // ProtocolFee: 2%, RoyaltyFee: 3%
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertOrderValid(makerAskOrder, orderValidatorV1);
@@ -1008,7 +988,7 @@ describe("LooksRare Exchange", () => {
       };
 
       await expect(
-        looksRareExchange.connect(takerBidUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
+        exchange.connect(takerBidUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
           value: parseEther("3"),
         })
       ).to.be.revertedWith("Fees: Higher than expected");
@@ -1021,14 +1001,14 @@ describe("LooksRare Exchange", () => {
       await assertOrderValid(makerAskOrder, orderValidatorV1);
 
       // Trade is executed
-      const tx = await looksRareExchange
+      const tx = await exchange
         .connect(takerBidUser)
         .matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
           value: parseEther("3"),
         });
 
       await expect(tx)
-        .to.emit(looksRareExchange, "TakerBid")
+        .to.emit(exchange, "TakerBid")
         .withArgs(
           computeOrderHash(makerAskOrder),
           makerAskOrder.nonce,
@@ -1064,7 +1044,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerBidUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertOrderValid(makerBidOrder, orderValidatorV1);
@@ -1084,7 +1064,7 @@ describe("LooksRare Exchange", () => {
         .updateRoyaltyInfoForCollection(mockERC721.address, admin.address, royaltyCollector.address, "301");
 
       await expect(
-        looksRareExchange.connect(takerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder)
+        exchange.connect(takerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder)
       ).to.be.revertedWith("Fees: Higher than expected");
 
       // Update back to 3.00% for royalties
@@ -1092,9 +1072,9 @@ describe("LooksRare Exchange", () => {
         .connect(admin)
         .updateRoyaltyInfoForCollection(mockERC721.address, admin.address, royaltyCollector.address, "300");
 
-      const tx = await looksRareExchange.connect(takerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder);
+      const tx = await exchange.connect(takerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder);
       await expect(tx)
-        .to.emit(looksRareExchange, "TakerAsk")
+        .to.emit(exchange, "TakerAsk")
         .withArgs(
           computeOrderHash(makerBidOrder),
           makerBidOrder.nonce,
@@ -1133,7 +1113,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode(["address"], [takerBidUser.address]), // target user
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertOrderValid(makerAskOrder, orderValidatorV1);
@@ -1147,14 +1127,14 @@ describe("LooksRare Exchange", () => {
         params: defaultAbiCoder.encode([], []),
       };
 
-      const tx = await looksRareExchange
+      const tx = await exchange
         .connect(takerBidUser)
         .matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
           value: parseEther("3"),
         });
 
       await expect(tx)
-        .to.emit(looksRareExchange, "TakerBid")
+        .to.emit(exchange, "TakerBid")
         .withArgs(
           computeOrderHash(makerAskOrder),
           makerAskOrder.nonce,
@@ -1170,9 +1150,7 @@ describe("LooksRare Exchange", () => {
 
       await assertErrorCode(makerAskOrder, NONCE_EXECUTED_OR_CANCELLED, orderValidatorV1);
       assert.equal(await mockERC721WithRoyalty.ownerOf("0"), takerBidUser.address);
-      assert.isTrue(
-        await looksRareExchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce)
-      );
+      assert.isTrue(await exchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce));
 
       // Verify WETH balance of royalty collector has increased
       assert.deepEqual(await weth.balanceOf(royaltyCollector.address), takerBidOrder.price.mul("200").div("10000"));
@@ -1410,7 +1388,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       const adjustedMakerAskOrder: MakerOrderWithSignature = await createMakerOrder({
@@ -1428,7 +1406,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertOrderValid(initialMakerAskOrder, orderValidatorV1);
@@ -1443,14 +1421,14 @@ describe("LooksRare Exchange", () => {
         params: defaultAbiCoder.encode([], []),
       });
 
-      const tx = await looksRareExchange
+      const tx = await exchange
         .connect(takerBidUser)
         .matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, adjustedMakerAskOrder, {
           value: takerBidOrder.price,
         });
 
       await expect(tx)
-        .to.emit(looksRareExchange, "TakerBid")
+        .to.emit(exchange, "TakerBid")
         .withArgs(
           computeOrderHash(adjustedMakerAskOrder),
           adjustedMakerAskOrder.nonce,
@@ -1468,19 +1446,17 @@ describe("LooksRare Exchange", () => {
       await assertErrorCode(adjustedMakerAskOrder, NONCE_EXECUTED_OR_CANCELLED, orderValidatorV1);
       assert.equal(await mockERC721.ownerOf("0"), takerBidUser.address);
       assert.isTrue(
-        await looksRareExchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, adjustedMakerAskOrder.nonce)
+        await exchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, adjustedMakerAskOrder.nonce)
       );
       assert.isTrue(
-        await looksRareExchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, initialMakerAskOrder.nonce)
+        await exchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, initialMakerAskOrder.nonce)
       );
 
       // Initial order is not executable anymore
       await expect(
-        looksRareExchange
-          .connect(takerBidUser)
-          .matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, initialMakerAskOrder, {
-            value: takerBidOrder.price,
-          })
+        exchange.connect(takerBidUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, initialMakerAskOrder, {
+          value: takerBidOrder.price,
+        })
       ).to.be.revertedWith("Order: Matching order expired");
     });
 
@@ -1503,7 +1479,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertOrderValid(makerAskOrder, orderValidatorV1);
@@ -1517,13 +1493,13 @@ describe("LooksRare Exchange", () => {
         params: defaultAbiCoder.encode([], []),
       });
 
-      const tx = await looksRareExchange.connect(makerAskUser).cancelMultipleMakerOrders([makerAskOrder.nonce]);
+      const tx = await exchange.connect(makerAskUser).cancelMultipleMakerOrders([makerAskOrder.nonce]);
       // Event params are not tested because of array issue with BN
-      await expect(tx).to.emit(looksRareExchange, "CancelMultipleOrders");
+      await expect(tx).to.emit(exchange, "CancelMultipleOrders");
 
       await assertErrorCode(makerAskOrder, NONCE_EXECUTED_OR_CANCELLED, orderValidatorV1);
       await expect(
-        looksRareExchange.connect(takerBidUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
+        exchange.connect(takerBidUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
           value: takerBidOrder.price,
         })
       ).to.be.revertedWith("Order: Matching order expired");
@@ -1548,7 +1524,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertOrderValid(makerAskOrder, orderValidatorV1);
@@ -1562,12 +1538,12 @@ describe("LooksRare Exchange", () => {
         params: defaultAbiCoder.encode([], []),
       });
 
-      const tx = await looksRareExchange.connect(makerAskUser).cancelAllOrdersForSender("1");
-      await expect(tx).to.emit(looksRareExchange, "CancelAllOrders").withArgs(makerAskUser.address, "1");
+      const tx = await exchange.connect(makerAskUser).cancelAllOrdersForSender("1");
+      await expect(tx).to.emit(exchange, "CancelAllOrders").withArgs(makerAskUser.address, "1");
 
       await assertErrorCode(makerAskOrder, NONCE_BELOW_MIN_ORDER_NONCE, orderValidatorV1);
       await expect(
-        looksRareExchange.connect(takerBidUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
+        exchange.connect(takerBidUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
           value: takerBidOrder.price,
         })
       ).to.be.revertedWith("Order: Matching order expired");
@@ -1592,7 +1568,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       const takerBidOrder: TakerOrder = {
@@ -1605,7 +1581,7 @@ describe("LooksRare Exchange", () => {
       };
 
       await expect(
-        looksRareExchange.connect(takerBidUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
+        exchange.connect(takerBidUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
           value: takerBidOrder.price.add(constants.One),
         })
       ).to.be.revertedWith("Order: Msg.value too high");
@@ -1630,7 +1606,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertErrorCode(makerAskOrder, ORDER_AMOUNT_CANNOT_BE_ZERO, orderValidatorV1);
@@ -1645,7 +1621,7 @@ describe("LooksRare Exchange", () => {
       };
 
       await expect(
-        looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder, {})
+        exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder, {})
       ).to.be.revertedWith("Order: Amount cannot be 0");
     });
 
@@ -1671,7 +1647,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       const takerBidOrder: TakerOrder = {
@@ -1684,11 +1660,11 @@ describe("LooksRare Exchange", () => {
       };
 
       await expect(
-        looksRareExchange.connect(fakeTakerUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder, {})
+        exchange.connect(fakeTakerUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder, {})
       ).to.be.revertedWith("Order: Taker must be the sender");
 
       await expect(
-        looksRareExchange.connect(fakeTakerUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
+        exchange.connect(fakeTakerUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
           value: takerBidOrder.price,
         })
       ).to.be.revertedWith("Order: Taker must be the sender");
@@ -1697,11 +1673,11 @@ describe("LooksRare Exchange", () => {
       takerBidOrder.isOrderAsk = true;
 
       await expect(
-        looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder, {})
+        exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder, {})
       ).to.be.revertedWith("Order: Wrong sides");
 
       await expect(
-        looksRareExchange.connect(takerBidUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
+        exchange.connect(takerBidUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
           value: takerBidOrder.price,
         })
       ).to.be.revertedWith("Order: Wrong sides");
@@ -1710,14 +1686,14 @@ describe("LooksRare Exchange", () => {
 
       // No need to duplicate tests again
       await expect(
-        looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder, {})
+        exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder, {})
       ).to.be.revertedWith("Order: Wrong sides");
 
       takerBidOrder.isOrderAsk = false;
 
       // No need to duplicate tests again
       await expect(
-        looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder)
+        exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder)
       ).to.be.revertedWith("Order: Wrong sides");
 
       // 2. MATCH ASK WITH TAKER BID
@@ -1740,7 +1716,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerBidUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       const takerAskOrder = createTakerOrder({
@@ -1753,64 +1729,64 @@ describe("LooksRare Exchange", () => {
       });
 
       await expect(
-        looksRareExchange.connect(fakeTakerUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder)
+        exchange.connect(fakeTakerUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder)
       ).to.be.revertedWith("Order: Taker must be the sender");
 
       // 2.2 Wrong sides
       takerAskOrder.isOrderAsk = false;
 
       await expect(
-        looksRareExchange.connect(makerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder)
+        exchange.connect(makerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder)
       ).to.be.revertedWith("Order: Wrong sides");
 
       makerBidOrder.isOrderAsk = true;
 
       await expect(
-        looksRareExchange.connect(takerBidUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder)
+        exchange.connect(takerBidUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder)
       ).to.be.revertedWith("Order: Wrong sides");
 
       takerAskOrder.isOrderAsk = true;
 
       await expect(
-        looksRareExchange.connect(takerBidUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder, {})
+        exchange.connect(takerBidUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder, {})
       ).to.be.revertedWith("Order: Wrong sides");
     });
 
     it("Cancel - Cannot cancel all at an nonce equal or lower than existing one", async () => {
-      await expect(looksRareExchange.connect(accounts[1]).cancelAllOrdersForSender("0")).to.be.revertedWith(
+      await expect(exchange.connect(accounts[1]).cancelAllOrdersForSender("0")).to.be.revertedWith(
         "Cancel: Order nonce lower than current"
       );
 
-      await expect(looksRareExchange.connect(accounts[1]).cancelAllOrdersForSender("500000")).to.be.revertedWith(
+      await expect(exchange.connect(accounts[1]).cancelAllOrdersForSender("500000")).to.be.revertedWith(
         "Cancel: Cannot cancel more orders"
       );
 
       // Change the minimum nonce for user to 2
-      await looksRareExchange.connect(accounts[1]).cancelAllOrdersForSender("2");
+      await exchange.connect(accounts[1]).cancelAllOrdersForSender("2");
 
-      await expect(looksRareExchange.connect(accounts[1]).cancelAllOrdersForSender("1")).to.be.revertedWith(
+      await expect(exchange.connect(accounts[1]).cancelAllOrdersForSender("1")).to.be.revertedWith(
         "Cancel: Order nonce lower than current"
       );
 
-      await expect(looksRareExchange.connect(accounts[1]).cancelAllOrdersForSender("2")).to.be.revertedWith(
+      await expect(exchange.connect(accounts[1]).cancelAllOrdersForSender("2")).to.be.revertedWith(
         "Cancel: Order nonce lower than current"
       );
     });
 
     it("Cancel - Cannot cancel all at an nonce equal than existing one", async () => {
       // Change the minimum nonce for user to 2
-      await looksRareExchange.connect(accounts[1]).cancelAllOrdersForSender("2");
+      await exchange.connect(accounts[1]).cancelAllOrdersForSender("2");
 
-      await expect(looksRareExchange.connect(accounts[1]).cancelMultipleMakerOrders(["0"])).to.be.revertedWith(
+      await expect(exchange.connect(accounts[1]).cancelMultipleMakerOrders(["0"])).to.be.revertedWith(
         "Cancel: Order nonce lower than current"
       );
 
-      await expect(looksRareExchange.connect(accounts[1]).cancelMultipleMakerOrders(["3", "1"])).to.be.revertedWith(
+      await expect(exchange.connect(accounts[1]).cancelMultipleMakerOrders(["3", "1"])).to.be.revertedWith(
         "Cancel: Order nonce lower than current"
       );
 
       // Can cancel at the same nonce that minimum one
-      await looksRareExchange.connect(accounts[1]).cancelMultipleMakerOrders(["2"]);
+      await exchange.connect(accounts[1]).cancelMultipleMakerOrders(["2"]);
     });
 
     it("Order - Cannot trade before startTime", async () => {
@@ -1837,7 +1813,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertErrorCode(makerAskOrder, TOO_EARLY_TO_EXECUTE_ORDER, orderValidatorV1);
@@ -1851,11 +1827,11 @@ describe("LooksRare Exchange", () => {
         params: defaultAbiCoder.encode([], []),
       });
       await expect(
-        looksRareExchange.connect(takerBidUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder)
+        exchange.connect(takerBidUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder)
       ).to.be.revertedWith("Strategy: Execution invalid");
 
       await increaseTo(startTimeOrder);
-      await looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
+      await exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
     });
 
     it("Order - Cannot trade after endTime", async () => {
@@ -1879,7 +1855,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerBidUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       const takerAskOrder = createTakerOrder({
@@ -1894,7 +1870,7 @@ describe("LooksRare Exchange", () => {
       await increaseTo(endTimeOrder.add(1));
 
       await expect(
-        looksRareExchange.connect(takerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder)
+        exchange.connect(takerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder)
       ).to.be.revertedWith("Strategy: Execution invalid");
 
       await assertErrorCode(makerBidOrder, TOO_LATE_TO_EXECUTE_ORDER, orderValidatorV1);
@@ -1921,7 +1897,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertErrorCode(makerAskOrder, CURRENCY_NOT_WHITELISTED, orderValidatorV1);
@@ -1936,13 +1912,13 @@ describe("LooksRare Exchange", () => {
       };
 
       await expect(
-        looksRareExchange.connect(takerBidUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
+        exchange.connect(takerBidUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
           value: takerBidOrder.price,
         })
       ).to.be.revertedWith("Currency: Not whitelisted");
 
       await expect(
-        looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder, {})
+        exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder, {})
       ).to.be.revertedWith("Currency: Not whitelisted");
     });
 
@@ -1965,7 +1941,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       const takerBidOrder: TakerOrder = {
@@ -1978,7 +1954,7 @@ describe("LooksRare Exchange", () => {
       };
 
       await expect(
-        looksRareExchange.connect(takerBidUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
+        exchange.connect(takerBidUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
           value: takerBidOrder.price,
         })
       ).to.be.revertedWith("Order: Currency must be WETH");
@@ -1992,7 +1968,7 @@ describe("LooksRare Exchange", () => {
       await mockUSDT.connect(takerBidUser).mint(takerBidUser.address, parseEther("1000000"));
 
       // Set approval for USDT
-      await mockUSDT.connect(takerBidUser).approve(looksRareExchange.address, constants.MaxUint256);
+      await mockUSDT.connect(takerBidUser).approve(exchange.address, constants.MaxUint256);
 
       const makerAskOrder = await createMakerOrder({
         isOrderAsk: true,
@@ -2009,7 +1985,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertErrorCode(makerAskOrder, CURRENCY_NOT_WHITELISTED, orderValidatorV1);
@@ -2024,7 +2000,7 @@ describe("LooksRare Exchange", () => {
       };
 
       await expect(
-        looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder, {})
+        exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder, {})
       ).to.be.revertedWith("Currency: Not whitelisted");
 
       let tx = await currencyManager.connect(admin).addCurrency(mockUSDT.address);
@@ -2032,9 +2008,9 @@ describe("LooksRare Exchange", () => {
 
       await assertOrderValid(makerAskOrder, orderValidatorV1);
 
-      tx = await looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
+      tx = await exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
       await expect(tx)
-        .to.emit(looksRareExchange, "TakerBid")
+        .to.emit(exchange, "TakerBid")
         .withArgs(
           computeOrderHash(makerAskOrder),
           makerAskOrder.nonce,
@@ -2068,7 +2044,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       const takerBidOrder: TakerOrder = {
@@ -2086,7 +2062,7 @@ describe("LooksRare Exchange", () => {
       await assertErrorCode(makerAskOrder, STRATEGY_NOT_WHITELISTED, orderValidatorV1);
 
       await expect(
-        looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder)
+        exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder)
       ).to.be.revertedWith("Strategy: Not whitelisted");
 
       tx = await executionManager.connect(admin).addStrategy(strategyStandardSaleForFixedPrice.address);
@@ -2096,10 +2072,10 @@ describe("LooksRare Exchange", () => {
 
       await assertOrderValid(makerAskOrder, orderValidatorV1);
 
-      tx = await looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
+      tx = await exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
 
       await expect(tx)
-        .to.emit(looksRareExchange, "TakerBid")
+        .to.emit(exchange, "TakerBid")
         .withArgs(
           computeOrderHash(makerAskOrder),
           makerAskOrder.nonce,
@@ -2140,7 +2116,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertErrorCode(makerAskOrder, NO_TRANSFER_MANAGER_AVAILABLE_FOR_COLLECTION, orderValidatorV1);
@@ -2155,7 +2131,7 @@ describe("LooksRare Exchange", () => {
       };
 
       await expect(
-        looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder, {})
+        exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder, {})
       ).to.be.revertedWith("Transfer: No NFT transfer manager available");
 
       let tx = await transferSelectorNFT
@@ -2176,10 +2152,10 @@ describe("LooksRare Exchange", () => {
         .connect(makerAskUser)
         .setApprovalForAll(transferManagerNonCompliantERC721.address, true);
 
-      tx = await looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
+      tx = await exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
 
       await expect(tx)
-        .to.emit(looksRareExchange, "TakerBid")
+        .to.emit(exchange, "TakerBid")
         .withArgs(
           computeOrderHash(makerAskOrder),
           makerAskOrder.nonce,
@@ -2245,7 +2221,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertOrderValid(makerAskOrder, orderValidatorV1);
@@ -2263,7 +2239,7 @@ describe("LooksRare Exchange", () => {
       };
 
       await expect(
-        looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder)
+        exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder)
       ).to.be.revertedWith("Signature: Invalid v parameter");
     });
 
@@ -2286,7 +2262,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       // The s value is picked randomly to make the condition be rejected
@@ -2304,16 +2280,16 @@ describe("LooksRare Exchange", () => {
       };
 
       await expect(
-        looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder)
+        exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder)
       ).to.be.revertedWith("Signature: Invalid s parameter");
     });
 
     it("Order - Cannot cancel if no order", async () => {
-      await expect(looksRareExchange.connect(accounts[1]).cancelMultipleMakerOrders([])).to.be.revertedWith(
+      await expect(exchange.connect(accounts[1]).cancelMultipleMakerOrders([])).to.be.revertedWith(
         "Cancel: Cannot be empty"
       );
 
-      await expect(looksRareExchange.connect(accounts[2]).cancelMultipleMakerOrders([])).to.be.revertedWith(
+      await expect(exchange.connect(accounts[2]).cancelMultipleMakerOrders([])).to.be.revertedWith(
         "Cancel: Cannot be empty"
       );
     });
@@ -2334,7 +2310,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: accounts[3],
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertErrorCode(makerAskOrder, MAKER_SIGNER_IS_NULL_SIGNER, orderValidatorV1);
@@ -2348,9 +2324,9 @@ describe("LooksRare Exchange", () => {
         params: defaultAbiCoder.encode([], []),
       };
 
-      await expect(
-        looksRareExchange.connect(accounts[2]).matchAskWithTakerBid(takerBidOrder, makerAskOrder)
-      ).to.be.revertedWith("Order: Invalid signer");
+      await expect(exchange.connect(accounts[2]).matchAskWithTakerBid(takerBidOrder, makerAskOrder)).to.be.revertedWith(
+        "Order: Invalid signer"
+      );
     });
 
     it("Order - Cannot execute if wrong signer", async () => {
@@ -2369,7 +2345,7 @@ describe("LooksRare Exchange", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: accounts[3],
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertErrorCode(makerAskOrder, WRONG_SIGNER_EOA, orderValidatorV1);
@@ -2383,63 +2359,63 @@ describe("LooksRare Exchange", () => {
         params: defaultAbiCoder.encode([], []),
       };
 
-      await expect(
-        looksRareExchange.connect(accounts[2]).matchAskWithTakerBid(takerBidOrder, makerAskOrder)
-      ).to.be.revertedWith("Signature: Invalid");
+      await expect(exchange.connect(accounts[2]).matchAskWithTakerBid(takerBidOrder, makerAskOrder)).to.be.revertedWith(
+        "Signature: Invalid"
+      );
     });
 
-    it("Transfer Managers - Transfer functions only callable by LooksRareExchange", async () => {
+    it("Transfer Managers - Transfer functions only callable by exchange", async () => {
       await expect(
         transferManagerERC721
           .connect(accounts[5])
           .transferNonFungibleToken(mockERC721.address, accounts[1].address, accounts[5].address, "0", "1")
-      ).to.be.revertedWith("Transfer: Only LooksRare Exchange");
+      ).to.be.revertedWith("Transfer: Only Exchange");
 
       await expect(
         transferManagerERC1155
           .connect(accounts[5])
           .transferNonFungibleToken(mockERC1155.address, accounts[1].address, accounts[5].address, "0", "2")
-      ).to.be.revertedWith("Transfer: Only LooksRare Exchange");
+      ).to.be.revertedWith("Transfer: Only Exchange");
 
       await expect(
         transferManagerNonCompliantERC721
           .connect(accounts[5])
           .transferNonFungibleToken(mockERC721.address, accounts[1].address, accounts[5].address, "0", "1")
-      ).to.be.revertedWith("Transfer: Only LooksRare Exchange");
+      ).to.be.revertedWith("Transfer: Only Exchange");
     });
   });
 
   describe("#6 - Owner functions and access rights", async () => {
-    it("LooksRareExchange - Null address in owner functions", async () => {
-      await expect(looksRareExchange.connect(admin).updateCurrencyManager(constants.AddressZero)).to.be.revertedWith(
+    it("exchange - Null address in owner functions", async () => {
+      await expect(exchange.connect(admin).updateCurrencyManager(constants.AddressZero)).to.be.revertedWith(
         "Owner: Cannot be null address"
       );
 
-      await expect(looksRareExchange.connect(admin).updateExecutionManager(constants.AddressZero)).to.be.revertedWith(
+      await expect(exchange.connect(admin).updateExecutionManager(constants.AddressZero)).to.be.revertedWith(
         "Owner: Cannot be null address"
       );
 
-      await expect(looksRareExchange.connect(admin).updateRoyaltyFeeManager(constants.AddressZero)).to.be.revertedWith(
+      await expect(exchange.connect(admin).updateRoyaltyFeeManager(constants.AddressZero)).to.be.revertedWith(
         "Owner: Cannot be null address"
       );
 
-      await expect(
-        looksRareExchange.connect(admin).updateTransferSelectorNFT(constants.AddressZero)
-      ).to.be.revertedWith("Owner: Cannot be null address");
+      await expect(exchange.connect(admin).updateTransferSelectorNFT(constants.AddressZero)).to.be.revertedWith(
+        "Owner: Cannot be null address"
+      );
     });
 
-    it("LooksRareExchange - Owner functions work as expected", async () => {
-      let tx = await looksRareExchange.connect(admin).updateCurrencyManager(currencyManager.address);
-      await expect(tx).to.emit(looksRareExchange, "NewCurrencyManager").withArgs(currencyManager.address);
+    it("exchange - Owner functions work as expected", async () => {
+      let tx = await exchange.connect(admin).updateCurrencyManager(currencyManager.address);
+      await expect(tx).to.emit(exchange, "NewCurrencyManager").withArgs(currencyManager.address);
 
-      tx = await looksRareExchange.connect(admin).updateExecutionManager(executionManager.address);
-      await expect(tx).to.emit(looksRareExchange, "NewExecutionManager").withArgs(executionManager.address);
+      tx = await exchange.connect(admin).updateExecutionManager(executionManager.address);
+      await expect(tx).to.emit(exchange, "NewExecutionManager").withArgs(executionManager.address);
 
-      tx = await looksRareExchange.connect(admin).updateRoyaltyFeeManager(royaltyFeeManager.address);
-      await expect(tx).to.emit(looksRareExchange, "NewRoyaltyFeeManager").withArgs(royaltyFeeManager.address);
+      tx = await exchange.connect(admin).updateRoyaltyFeeManager(royaltyFeeManager.address);
+      await expect(tx).to.emit(exchange, "NewRoyaltyFeeManager").withArgs(royaltyFeeManager.address);
 
-      tx = await looksRareExchange.connect(admin).updateProtocolFeeRecipient(admin.address);
-      await expect(tx).to.emit(looksRareExchange, "NewProtocolFeeRecipient").withArgs(admin.address);
+      tx = await exchange.connect(admin).updateProtocolFeeRecipient(admin.address);
+      await expect(tx).to.emit(exchange, "NewProtocolFeeRecipient").withArgs(admin.address);
     });
 
     it("TransferSelector - Owner revertions work as expected", async () => {
@@ -2472,27 +2448,27 @@ describe("LooksRare Exchange", () => {
         .withArgs(royaltyFeeSetter.address, admin.address);
     });
 
-    it("LooksRareExchange - Owner functions are only callable by owner", async () => {
+    it("exchange - Owner functions are only callable by owner", async () => {
       const notAdminUser = accounts[3];
 
+      await expect(exchange.connect(notAdminUser).updateCurrencyManager(currencyManager.address)).to.be.revertedWith(
+        "Ownable: caller is not the owner"
+      );
+
+      await expect(exchange.connect(notAdminUser).updateExecutionManager(executionManager.address)).to.be.revertedWith(
+        "Ownable: caller is not the owner"
+      );
+
+      await expect(exchange.connect(notAdminUser).updateProtocolFeeRecipient(notAdminUser.address)).to.be.revertedWith(
+        "Ownable: caller is not the owner"
+      );
+
       await expect(
-        looksRareExchange.connect(notAdminUser).updateCurrencyManager(currencyManager.address)
+        exchange.connect(notAdminUser).updateRoyaltyFeeManager(royaltyFeeManager.address)
       ).to.be.revertedWith("Ownable: caller is not the owner");
 
       await expect(
-        looksRareExchange.connect(notAdminUser).updateExecutionManager(executionManager.address)
-      ).to.be.revertedWith("Ownable: caller is not the owner");
-
-      await expect(
-        looksRareExchange.connect(notAdminUser).updateProtocolFeeRecipient(notAdminUser.address)
-      ).to.be.revertedWith("Ownable: caller is not the owner");
-
-      await expect(
-        looksRareExchange.connect(notAdminUser).updateRoyaltyFeeManager(royaltyFeeManager.address)
-      ).to.be.revertedWith("Ownable: caller is not the owner");
-
-      await expect(
-        looksRareExchange.connect(notAdminUser).updateTransferSelectorNFT(transferSelectorNFT.address)
+        exchange.connect(notAdminUser).updateTransferSelectorNFT(transferSelectorNFT.address)
       ).to.be.revertedWith("Ownable: caller is not the owner");
     });
 

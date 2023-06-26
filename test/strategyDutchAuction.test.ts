@@ -22,7 +22,7 @@ describe("Strategy - Dutch Auction", () => {
   // Exchange contracts
   let transferManagerERC721: Contract;
   let transferManagerERC1155: Contract;
-  let looksRareExchange: Contract;
+  let exchange: Contract;
 
   // Strategy contract
   let strategyDutchAuction: Contract;
@@ -56,7 +56,7 @@ describe("Strategy - Dutch Auction", () => {
       transferManagerERC721,
       transferManagerERC1155,
       ,
-      looksRareExchange,
+      exchange,
       ,
       ,
       strategyDutchAuction,
@@ -73,13 +73,13 @@ describe("Strategy - Dutch Auction", () => {
       mockERC721,
       mockERC721WithRoyalty,
       mockERC1155,
-      looksRareExchange,
+      exchange,
       transferManagerERC721,
       transferManagerERC1155
     );
 
     // Verify the domain separator is properly computed
-    assert.equal(await looksRareExchange.DOMAIN_SEPARATOR(), computeDomainSeparator(looksRareExchange.address));
+    assert.equal(await exchange.DOMAIN_SEPARATOR(), computeDomainSeparator(exchange.address));
 
     // Set up defaults startTime/endTime (for orders)
     startTimeOrder = BigNumber.from((await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp);
@@ -107,7 +107,7 @@ describe("Strategy - Dutch Auction", () => {
       minPercentageToAsk: constants.Zero,
       params: defaultAbiCoder.encode(["uint256"], [parseEther("5")]),
       signerUser: makerAskUser,
-      verifyingContract: looksRareExchange.address,
+      verifyingContract: exchange.address,
     });
 
     const takerBidOrder = createTakerOrder({
@@ -121,22 +121,22 @@ describe("Strategy - Dutch Auction", () => {
 
     // User 2 cannot buy since the current auction price is not 3
     await expect(
-      looksRareExchange.connect(takerBidUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
+      exchange.connect(takerBidUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
         value: takerBidOrder.price,
       })
     ).to.be.revertedWith("Strategy: Execution invalid");
 
-    await expect(
-      looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder)
-    ).to.be.revertedWith("Strategy: Execution invalid");
+    await expect(exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder)).to.be.revertedWith(
+      "Strategy: Execution invalid"
+    );
 
     // Advance time to half time of the auction (3 is between 5 and 1)
     const midTimeOrder = startTimeOrder.add("500");
     await increaseTo(midTimeOrder);
 
-    const tx = await looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
+    const tx = await exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
     await expect(tx)
-      .to.emit(looksRareExchange, "TakerBid")
+      .to.emit(exchange, "TakerBid")
       .withArgs(
         computeOrderHash(makerAskOrder),
         makerAskOrder.nonce,
@@ -151,9 +151,7 @@ describe("Strategy - Dutch Auction", () => {
       );
 
     assert.equal(await mockERC721.ownerOf("0"), takerBidUser.address);
-    assert.isTrue(
-      await looksRareExchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce)
-    );
+    assert.isTrue(await exchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce));
   });
 
   it("ERC1155 - Buyer overpays", async () => {
@@ -176,7 +174,7 @@ describe("Strategy - Dutch Auction", () => {
       minPercentageToAsk: constants.Zero,
       params: defaultAbiCoder.encode(["uint256"], [parseEther("5")]),
       signerUser: makerAskUser,
-      verifyingContract: looksRareExchange.address,
+      verifyingContract: exchange.address,
     });
 
     const takerBidOrder = createTakerOrder({
@@ -193,9 +191,9 @@ describe("Strategy - Dutch Auction", () => {
     await increaseTo(midTimeOrder);
 
     // User 2 buys with 4.5 WETH (when auction price was at 3 WETH)
-    const tx = await looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
+    const tx = await exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
     await expect(tx)
-      .to.emit(looksRareExchange, "TakerBid")
+      .to.emit(exchange, "TakerBid")
       .withArgs(
         computeOrderHash(makerAskOrder),
         makerAskOrder.nonce,
@@ -238,7 +236,7 @@ describe("Strategy - Dutch Auction", () => {
       minPercentageToAsk: constants.Zero,
       params: defaultAbiCoder.encode(["uint256", "uint256"], [parseEther("3"), parseEther("5")]), // startPrice/endPrice
       signerUser: makerAskUser,
-      verifyingContract: looksRareExchange.address,
+      verifyingContract: exchange.address,
     });
 
     const takerBidOrder: TakerOrder = {
@@ -250,9 +248,9 @@ describe("Strategy - Dutch Auction", () => {
       params: defaultAbiCoder.encode([], []),
     };
 
-    await expect(
-      looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder)
-    ).to.be.revertedWith("Dutch Auction: Start price must be greater than end price");
+    await expect(exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder)).to.be.revertedWith(
+      "Dutch Auction: Start price must be greater than end price"
+    );
 
     // EndTimeOrder is 50 seconds after startTimeOrder
     endTimeOrder = startTimeOrder.add(BigNumber.from("50"));
@@ -272,12 +270,12 @@ describe("Strategy - Dutch Auction", () => {
       minPercentageToAsk: constants.Zero,
       params: defaultAbiCoder.encode(["uint256", "uint256"], [parseEther("5"), parseEther("3")]), // startPrice/endPrice
       signerUser: makerAskUser,
-      verifyingContract: looksRareExchange.address,
+      verifyingContract: exchange.address,
     });
 
-    await expect(
-      looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder)
-    ).to.be.revertedWith("Dutch Auction: Length must be longer");
+    await expect(exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder)).to.be.revertedWith(
+      "Dutch Auction: Length must be longer"
+    );
   });
 
   it("Cannot match if wrong side", async () => {
@@ -299,7 +297,7 @@ describe("Strategy - Dutch Auction", () => {
       minPercentageToAsk: constants.Zero,
       params: defaultAbiCoder.encode(["uint256"], [parseEther("5")]), // startPrice
       signerUser: takerBidUser,
-      verifyingContract: looksRareExchange.address,
+      verifyingContract: exchange.address,
     });
 
     const takerAskOrder: TakerOrder = {
@@ -311,9 +309,9 @@ describe("Strategy - Dutch Auction", () => {
       params: defaultAbiCoder.encode([], []),
     };
 
-    await expect(
-      looksRareExchange.connect(makerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder)
-    ).to.be.revertedWith("Strategy: Execution invalid");
+    await expect(exchange.connect(makerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder)).to.be.revertedWith(
+      "Strategy: Execution invalid"
+    );
   });
 
   it("Min Auction length creates revertion as expected", async () => {

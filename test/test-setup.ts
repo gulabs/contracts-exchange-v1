@@ -88,28 +88,28 @@ export async function setUp(
   // Transfer ownership of RoyaltyFeeRegistry to RoyaltyFeeSetter
   await royaltyFeeRegistry.connect(admin).transferOwnership(royaltyFeeSetter.address);
 
-  /** 6. Deploy LooksRareExchange contract
+  /** 6. Deploy Exchange contract
    */
-  const LooksRareExchange = await ethers.getContractFactory("LooksRareExchange");
-  const looksRareExchange = await LooksRareExchange.deploy(
+  const Exchange = await ethers.getContractFactory("GUNftMarketplaceExchange");
+  const exchange = await Exchange.deploy(
     currencyManager.address,
     executionManager.address,
     royaltyFeeManager.address,
     weth.address,
     feeRecipient.address
   );
-  await looksRareExchange.deployed();
+  await exchange.deployed();
 
   /** 6. Deploy TransferManager contracts and TransferSelector
    */
   const TransferManagerERC721 = await ethers.getContractFactory("TransferManagerERC721");
-  const transferManagerERC721 = await TransferManagerERC721.deploy(looksRareExchange.address);
+  const transferManagerERC721 = await TransferManagerERC721.deploy(exchange.address);
   await transferManagerERC721.deployed();
   const TransferManagerERC1155 = await ethers.getContractFactory("TransferManagerERC1155");
-  const transferManagerERC1155 = await TransferManagerERC1155.deploy(looksRareExchange.address);
+  const transferManagerERC1155 = await TransferManagerERC1155.deploy(exchange.address);
   await transferManagerERC1155.deployed();
   const TransferManagerNonCompliantERC721 = await ethers.getContractFactory("TransferManagerNonCompliantERC721");
-  const transferManagerNonCompliantERC721 = await TransferManagerNonCompliantERC721.deploy(looksRareExchange.address);
+  const transferManagerNonCompliantERC721 = await TransferManagerNonCompliantERC721.deploy(exchange.address);
   await transferManagerNonCompliantERC721.deployed();
   const TransferSelectorNFT = await ethers.getContractFactory("TransferSelectorNFT");
   const transferSelectorNFT = await TransferSelectorNFT.deploy(
@@ -118,8 +118,8 @@ export async function setUp(
   );
   await transferSelectorNFT.deployed();
 
-  // Set TransferSelectorNFT in LooksRare exchange
-  await looksRareExchange.connect(admin).updateTransferSelectorNFT(transferSelectorNFT.address);
+  // Set TransferSelectorNFT in exchange
+  await exchange.connect(admin).updateTransferSelectorNFT(transferSelectorNFT.address);
 
   /** Return contracts
    */
@@ -135,7 +135,7 @@ export async function setUp(
     transferManagerERC721,
     transferManagerERC1155,
     transferManagerNonCompliantERC721,
-    looksRareExchange,
+    exchange,
     strategyStandardSaleForFixedPrice,
     strategyAnyItemFromCollectionForFixedPrice,
     strategyDutchAuction,

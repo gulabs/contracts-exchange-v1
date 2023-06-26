@@ -6,7 +6,7 @@ import deployExecutionManager from "./src/deploy-execution-manager";
 import deployExecutionStrategy from "./src/deploy-execution-strategy";
 import addStrategies from "./src/add-strategies";
 import deployRoyaltySystem from "./src/deploy-royalty-system";
-import deployLooksRareExchange from "./src/deploy-looks-rare-exchange";
+import deployExchange from "./src/deploy-exchange";
 import deployTransferSelectorNFT from "./src/deploy-transfer-selector-nft";
 import updateTransferSelectorNFT from "./src/update-transfer-selector-nft";
 import transferOwnership from "./src/transfer-ownership";
@@ -43,14 +43,14 @@ async function main() {
   });
 
   const { royaltyFeeManager, royaltyFeeSetter } = await deployRoyaltySystem();
-  const looksRareExchange = await deployLooksRareExchange({
+  const exchange = await deployExchange({
     currencyManager,
     executionManager,
     royaltyFeeManager,
     weth,
   });
-  const transferSelectorNFT = await deployTransferSelectorNFT(looksRareExchange);
-  await updateTransferSelectorNFT(looksRareExchange, transferSelectorNFT);
+  const transferSelectorNFT = await deployTransferSelectorNFT(exchange);
+  await updateTransferSelectorNFT(exchange, transferSelectorNFT);
 
   console.log("Transfer ownership of CurrencyManager to:");
   await transferOwnership(currencyManager, env.CURRENCY_MANAGER_OWNER_ADDRESS);
@@ -82,12 +82,12 @@ async function main() {
   await transferOwnership(royaltyFeeSetter, env.ROYALTY_FEE_SETTER_OWNER_ADDRESS);
   console.log("Transfer ownership of RoyaltyFeeManager to:");
   await transferOwnership(royaltyFeeManager, env.ROYALTY_FEE_MANAGER_OWNER_ADDRESS);
-  console.log("Transfer ownership of LooksRareExchange to:");
-  await transferOwnership(looksRareExchange, env.LOOKS_RARE_EXCHANGE_OWNER_ADDRESS);
+  console.log("Transfer ownership of Exchange to:");
+  await transferOwnership(exchange, env.GU_NFT_MARKETPLACE_EXCHANGE_OWNER_ADDRESS);
   console.log("Transfer ownership of TransferSelectorNFT to:");
   await transferOwnership(transferSelectorNFT, env.TRANSFER_SELECTOR_NFT_OWNER_ADDRESS);
 
-  await deployOrderValidatorV1(looksRareExchange);
+  await deployOrderValidatorV1(exchange);
 
   console.log("DONE!");
 

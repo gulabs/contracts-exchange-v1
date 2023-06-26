@@ -21,7 +21,7 @@ describe("Strategy - AnyItemFromCollectionForFixedPrice ('Collection orders')", 
   // Exchange contracts
   let transferManagerERC721: Contract;
   let transferManagerERC1155: Contract;
-  let looksRareExchange: Contract;
+  let exchange: Contract;
 
   // Strategy contract
   let strategyAnyItemFromCollectionForFixedPrice: Contract;
@@ -55,7 +55,7 @@ describe("Strategy - AnyItemFromCollectionForFixedPrice ('Collection orders')", 
       transferManagerERC721,
       transferManagerERC1155,
       ,
-      looksRareExchange,
+      exchange,
       ,
       strategyAnyItemFromCollectionForFixedPrice,
       ,
@@ -72,13 +72,13 @@ describe("Strategy - AnyItemFromCollectionForFixedPrice ('Collection orders')", 
       mockERC721,
       mockERC721WithRoyalty,
       mockERC1155,
-      looksRareExchange,
+      exchange,
       transferManagerERC721,
       transferManagerERC1155
     );
 
     // Verify the domain separator is properly computed
-    assert.equal(await looksRareExchange.DOMAIN_SEPARATOR(), computeDomainSeparator(looksRareExchange.address));
+    assert.equal(await exchange.DOMAIN_SEPARATOR(), computeDomainSeparator(exchange.address));
 
     // Set up defaults startTime/endTime (for orders)
     startTimeOrder = BigNumber.from((await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp);
@@ -104,7 +104,7 @@ describe("Strategy - AnyItemFromCollectionForFixedPrice ('Collection orders')", 
       minPercentageToAsk: constants.Zero,
       params: defaultAbiCoder.encode([], []),
       signerUser: makerBidUser,
-      verifyingContract: looksRareExchange.address,
+      verifyingContract: exchange.address,
     });
 
     const takerAskOrder = createTakerOrder({
@@ -116,9 +116,9 @@ describe("Strategy - AnyItemFromCollectionForFixedPrice ('Collection orders')", 
       params: defaultAbiCoder.encode([], []),
     });
 
-    const tx = await looksRareExchange.connect(takerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder);
+    const tx = await exchange.connect(takerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder);
     await expect(tx)
-      .to.emit(looksRareExchange, "TakerAsk")
+      .to.emit(exchange, "TakerAsk")
       .withArgs(
         computeOrderHash(makerBidOrder),
         makerBidOrder.nonce,
@@ -132,9 +132,7 @@ describe("Strategy - AnyItemFromCollectionForFixedPrice ('Collection orders')", 
         makerBidOrder.price
       );
 
-    assert.isTrue(
-      await looksRareExchange.isUserOrderNonceExecutedOrCancelled(makerBidUser.address, makerBidOrder.nonce)
-    );
+    assert.isTrue(await exchange.isUserOrderNonceExecutedOrCancelled(makerBidUser.address, makerBidOrder.nonce));
   });
 
   it("ERC1155 - MakerBid order is matched by TakerAsk order", async () => {
@@ -156,7 +154,7 @@ describe("Strategy - AnyItemFromCollectionForFixedPrice ('Collection orders')", 
       minPercentageToAsk: constants.Zero,
       params: defaultAbiCoder.encode([], []),
       signerUser: makerBidUser,
-      verifyingContract: looksRareExchange.address,
+      verifyingContract: exchange.address,
     });
 
     const takerAskOrder = createTakerOrder({
@@ -168,9 +166,9 @@ describe("Strategy - AnyItemFromCollectionForFixedPrice ('Collection orders')", 
       params: defaultAbiCoder.encode([], []),
     });
 
-    const tx = await looksRareExchange.connect(takerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder);
+    const tx = await exchange.connect(takerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder);
     await expect(tx)
-      .to.emit(looksRareExchange, "TakerAsk")
+      .to.emit(exchange, "TakerAsk")
       .withArgs(
         computeOrderHash(makerBidOrder),
         makerBidOrder.nonce,
@@ -184,9 +182,7 @@ describe("Strategy - AnyItemFromCollectionForFixedPrice ('Collection orders')", 
         makerBidOrder.price
       );
 
-    assert.isTrue(
-      await looksRareExchange.isUserOrderNonceExecutedOrCancelled(makerBidUser.address, makerBidOrder.nonce)
-    );
+    assert.isTrue(await exchange.isUserOrderNonceExecutedOrCancelled(makerBidUser.address, makerBidOrder.nonce));
   });
 
   it("Cannot match if wrong side", async () => {
@@ -208,7 +204,7 @@ describe("Strategy - AnyItemFromCollectionForFixedPrice ('Collection orders')", 
       minPercentageToAsk: constants.Zero,
       params: defaultAbiCoder.encode([], []),
       signerUser: makerAskUser,
-      verifyingContract: looksRareExchange.address,
+      verifyingContract: exchange.address,
     });
 
     const takerBidOrder: TakerOrder = {
@@ -220,8 +216,8 @@ describe("Strategy - AnyItemFromCollectionForFixedPrice ('Collection orders')", 
       params: defaultAbiCoder.encode([], []),
     };
 
-    await expect(
-      looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder)
-    ).to.be.revertedWith("Strategy: Execution invalid");
+    await expect(exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder)).to.be.revertedWith(
+      "Strategy: Execution invalid"
+    );
   });
 });

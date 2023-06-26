@@ -1,16 +1,16 @@
 import { ethers } from "hardhat";
 import env from "./load-env";
 
-export default async function deployOrderValidatorV1(looksRareExchange: string): Promise<void> {
+export default async function deployOrderValidatorV1(exchange: string): Promise<void> {
   let orderValidatorV1 =
     env.ORDER_VALIDATOR_ADDRESS === false ? ethers.constants.AddressZero : env.ORDER_VALIDATOR_ADDRESS;
   if (!orderValidatorV1) {
     console.log("\nDeploy OrderValidatorV1 with following parameters:");
     console.log(`
-      looksRareExchange: ${looksRareExchange}
+      Exchange: ${exchange}
     `);
     const OrderValidatorV1 = await ethers.getContractFactory("OrderValidatorV1");
-    const orderValidatorV1_ = await OrderValidatorV1.deploy(looksRareExchange);
+    const orderValidatorV1_ = await OrderValidatorV1.deploy(exchange);
     await orderValidatorV1_.deployed();
 
     orderValidatorV1 = orderValidatorV1_.address;
@@ -24,10 +24,10 @@ export default async function deployOrderValidatorV1(looksRareExchange: string):
   if (!orderValidatorV1B) {
     console.log("\nDeploy OrderValidatorV1B with following parameters:");
     console.log(`
-    looksRareExchange: ${looksRareExchange}
+    Exchange: ${exchange}
   `);
     const OrderValidatorV1B = await ethers.getContractFactory("OrderValidatorV1");
-    const orderValidatorV1B_ = await OrderValidatorV1B.deploy(looksRareExchange);
+    const orderValidatorV1B_ = await OrderValidatorV1B.deploy(exchange);
     await orderValidatorV1B_.deployed();
 
     orderValidatorV1B = orderValidatorV1B_.address;

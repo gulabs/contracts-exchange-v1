@@ -18,7 +18,7 @@ import { assertErrorCode, assertOrderValid } from "./helpers/order-validation-he
 
 const { defaultAbiCoder, parseEther } = utils;
 
-describe("LooksRare Exchange post-royalty change", () => {
+describe("Exchange post-royalty change", () => {
   // Mock contracts
   let mockERC721: Contract;
   let mockERC721WithRoyalty: Contract;
@@ -31,7 +31,7 @@ describe("LooksRare Exchange post-royalty change", () => {
   let executionManager: Contract;
   let royaltyFeeRegistry: Contract;
   let royaltyFeeSetter: Contract;
-  let looksRareExchange: Contract;
+  let exchange: Contract;
   let orderValidatorV1B: Contract;
   let royaltyFeeManagerV1B: Contract;
   let strategyStandardSaleForFixedPriceV1B: Contract;
@@ -66,7 +66,7 @@ describe("LooksRare Exchange post-royalty change", () => {
       transferManagerERC721,
       transferManagerERC1155,
       ,
-      looksRareExchange,
+      exchange,
       ,
       ,
       ,
@@ -83,13 +83,13 @@ describe("LooksRare Exchange post-royalty change", () => {
       mockERC721,
       mockERC721WithRoyalty,
       mockERC1155,
-      looksRareExchange,
+      exchange,
       transferManagerERC721,
       transferManagerERC1155
     );
 
     // Verify the domain separator is properly computed
-    assert.equal(await looksRareExchange.DOMAIN_SEPARATOR(), computeDomainSeparator(looksRareExchange.address));
+    assert.equal(await exchange.DOMAIN_SEPARATOR(), computeDomainSeparator(exchange.address));
 
     // Set up defaults startTime/endTime (for orders)
     startTimeOrder = BigNumber.from((await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp);
@@ -99,10 +99,10 @@ describe("LooksRare Exchange post-royalty change", () => {
     royaltyFeeManagerV1B = await RoyaltyFeeManagerV1B.deploy(royaltyFeeRegistry.address);
     await royaltyFeeManagerV1B.deployed();
 
-    await looksRareExchange.connect(admin).updateRoyaltyFeeManager(royaltyFeeManagerV1B.address);
+    await exchange.connect(admin).updateRoyaltyFeeManager(royaltyFeeManagerV1B.address);
 
     const OrderValidatorV1B = await ethers.getContractFactory("OrderValidatorV1B");
-    orderValidatorV1B = await OrderValidatorV1B.deploy(looksRareExchange.address);
+    orderValidatorV1B = await OrderValidatorV1B.deploy(exchange.address);
     await orderValidatorV1B.deployed();
 
     standardRoyaltyFee = await royaltyFeeManagerV1B.STANDARD_ROYALTY_FEE();
@@ -136,7 +136,7 @@ describe("LooksRare Exchange post-royalty change", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertOrderValid(makerAskOrder, orderValidatorV1B);
@@ -150,14 +150,14 @@ describe("LooksRare Exchange post-royalty change", () => {
         params: defaultAbiCoder.encode([], []),
       });
 
-      const tx = await looksRareExchange
+      const tx = await exchange
         .connect(takerBidUser)
         .matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
           value: takerBidOrder.price,
         });
 
       await expect(tx)
-        .to.emit(looksRareExchange, "TakerBid")
+        .to.emit(exchange, "TakerBid")
         .withArgs(
           computeOrderHash(makerAskOrder),
           makerAskOrder.nonce,
@@ -174,13 +174,11 @@ describe("LooksRare Exchange post-royalty change", () => {
       await assertErrorCode(makerAskOrder, NONCE_EXECUTED_OR_CANCELLED, orderValidatorV1B);
 
       assert.equal(await mockERC721.ownerOf("0"), takerBidUser.address);
-      assert.isTrue(
-        await looksRareExchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce)
-      );
+      assert.isTrue(await exchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce));
 
       // Orders that have been executed cannot be matched again
       await expect(
-        looksRareExchange.connect(takerBidUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
+        exchange.connect(takerBidUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
           value: takerBidOrder.price,
         })
       ).to.be.revertedWith("Order: Matching order expired");
@@ -210,7 +208,7 @@ describe("LooksRare Exchange post-royalty change", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertOrderValid(makerAskOrder, orderValidatorV1B);
@@ -224,9 +222,9 @@ describe("LooksRare Exchange post-royalty change", () => {
         params: defaultAbiCoder.encode([], []),
       };
 
-      const tx = await looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
+      const tx = await exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
       await expect(tx)
-        .to.emit(looksRareExchange, "TakerBid")
+        .to.emit(exchange, "TakerBid")
         .withArgs(
           computeOrderHash(makerAskOrder),
           makerAskOrder.nonce,
@@ -243,7 +241,7 @@ describe("LooksRare Exchange post-royalty change", () => {
       const expectedRoyaltyAmount = BigNumber.from(takerBidOrder.price).mul(standardRoyaltyFee).div("10000");
 
       await expect(tx)
-        .to.emit(looksRareExchange, "RoyaltyPayment")
+        .to.emit(exchange, "RoyaltyPayment")
         .withArgs(
           makerAskOrder.collection,
           takerBidOrder.tokenId,
@@ -254,9 +252,7 @@ describe("LooksRare Exchange post-royalty change", () => {
 
       await assertErrorCode(makerAskOrder, NONCE_EXECUTED_OR_CANCELLED, orderValidatorV1B);
       assert.equal(await mockERC721WithRoyalty.ownerOf("0"), takerBidUser.address);
-      assert.isTrue(
-        await looksRareExchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce)
-      );
+      assert.isTrue(await exchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce));
       // Verify WETH balance of royalty collector has increased
       assert.deepEqual(await weth.balanceOf(royaltyCollector.address), expectedRoyaltyAmount);
     });
@@ -286,7 +282,7 @@ describe("LooksRare Exchange post-royalty change", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertOrderValid(makerAskOrder, orderValidatorV1B);
@@ -300,14 +296,14 @@ describe("LooksRare Exchange post-royalty change", () => {
         params: defaultAbiCoder.encode([], []),
       };
 
-      const tx = await looksRareExchange
+      const tx = await exchange
         .connect(takerBidUser)
         .matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
           value: parseEther("3"),
         });
 
       await expect(tx)
-        .to.emit(looksRareExchange, "TakerBid")
+        .to.emit(exchange, "TakerBid")
         .withArgs(
           computeOrderHash(makerAskOrder),
           makerAskOrder.nonce,
@@ -324,7 +320,7 @@ describe("LooksRare Exchange post-royalty change", () => {
       const expectedRoyaltyAmount = BigNumber.from(takerBidOrder.price).mul(standardRoyaltyFee).div("10000");
 
       await expect(tx)
-        .to.emit(looksRareExchange, "RoyaltyPayment")
+        .to.emit(exchange, "RoyaltyPayment")
         .withArgs(
           makerAskOrder.collection,
           takerBidOrder.tokenId,
@@ -335,9 +331,7 @@ describe("LooksRare Exchange post-royalty change", () => {
 
       await assertErrorCode(makerAskOrder, NONCE_EXECUTED_OR_CANCELLED, orderValidatorV1B);
       assert.equal(await mockERC721WithRoyalty.ownerOf("0"), takerBidUser.address);
-      assert.isTrue(
-        await looksRareExchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce)
-      );
+      assert.isTrue(await exchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce));
       // Verify WETH balance of royalty collector has increased
       assert.deepEqual(await weth.balanceOf(royaltyCollector.address), expectedRoyaltyAmount);
     });
@@ -379,7 +373,7 @@ describe("LooksRare Exchange post-royalty change", () => {
         minPercentageToAsk: constants.Zero,
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertOrderValid(makerAskOrder, orderValidatorV1B);
@@ -393,10 +387,10 @@ describe("LooksRare Exchange post-royalty change", () => {
         params: defaultAbiCoder.encode([], []),
       };
 
-      tx = await looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
+      tx = await exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
 
       await expect(tx)
-        .to.emit(looksRareExchange, "TakerBid")
+        .to.emit(exchange, "TakerBid")
         .withArgs(
           computeOrderHash(makerAskOrder),
           makerAskOrder.nonce,
@@ -413,7 +407,7 @@ describe("LooksRare Exchange post-royalty change", () => {
       const expectedRoyaltyAmount = BigNumber.from(takerBidOrder.price).mul(standardRoyaltyFee).div("10000");
 
       await expect(tx)
-        .to.emit(looksRareExchange, "RoyaltyPayment")
+        .to.emit(exchange, "RoyaltyPayment")
         .withArgs(
           makerAskOrder.collection,
           takerBidOrder.tokenId,
@@ -424,9 +418,7 @@ describe("LooksRare Exchange post-royalty change", () => {
 
       await assertErrorCode(makerAskOrder, NONCE_EXECUTED_OR_CANCELLED, orderValidatorV1B);
       assert.equal(await mockERC721.ownerOf("0"), takerBidUser.address);
-      assert.isTrue(
-        await looksRareExchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce)
-      );
+      assert.isTrue(await exchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce));
 
       // Verify WETH balance of royalty collector has increased
       assert.deepEqual(await weth.balanceOf(royaltyCollector.address), expectedRoyaltyAmount);
@@ -439,7 +431,7 @@ describe("LooksRare Exchange post-royalty change", () => {
         mockERC721,
         mockERC721WithRoyalty,
         mockERC1155,
-        looksRareExchange,
+        exchange,
         transferManagerERC721,
         transferManagerERC1155
       );
@@ -463,7 +455,7 @@ describe("LooksRare Exchange post-royalty change", () => {
         minPercentageToAsk: BigNumber.from("9851"), // Protocol fee is 2%
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertErrorCode(makerAskOrder, MIN_NET_RATIO_ABOVE_PROTOCOL_FEE, orderValidatorV1B);
@@ -489,7 +481,7 @@ describe("LooksRare Exchange post-royalty change", () => {
         minPercentageToAsk: BigNumber.from("9801"), // Protocol fee is 1.5% and royalty is set at 0.5%
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertErrorCode(
@@ -514,7 +506,7 @@ describe("LooksRare Exchange post-royalty change", () => {
         minPercentageToAsk: BigNumber.from("9801"), // Protocol fee is 1.5% and royalty fee is 0.5%%
         params: defaultAbiCoder.encode([], []),
         signerUser: makerAskUser,
-        verifyingContract: looksRareExchange.address,
+        verifyingContract: exchange.address,
       });
 
       await assertErrorCode(makerAskOrder, MIN_NET_RATIO_ABOVE_ROYALTY_FEE_ERC2981_AND_PROTOCOL_FEE, orderValidatorV1B);

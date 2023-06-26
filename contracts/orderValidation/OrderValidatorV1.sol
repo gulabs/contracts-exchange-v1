@@ -9,11 +9,11 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC165, IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 
-// LooksRare libraries and validation code constants
+// libraries and validation code constants
 import {OrderTypes} from "../libraries/OrderTypes.sol";
 import "./ValidationCodeConstants.sol";
 
-// LooksRare interfaces
+// interfaces
 import {ICurrencyManager} from "../interfaces/ICurrencyManager.sol";
 import {IExecutionManager} from "../interfaces/IExecutionManager.sol";
 import {IExecutionStrategy} from "../interfaces/IExecutionStrategy.sol";
@@ -21,12 +21,12 @@ import {IRoyaltyFeeRegistry} from "../interfaces/IRoyaltyFeeRegistry.sol";
 import {ITransferManagerNFT} from "../interfaces/ITransferManagerNFT.sol";
 import {ITransferSelectorNFTExtended, IRoyaltyFeeManagerExtended} from "./ExtendedInterfaces.sol";
 
-// LooksRareExchange
-import {LooksRareExchange} from "../LooksRareExchange.sol";
+// Exchange
+import {GUNftMarketplaceExchange} from "../GUNftMarketplaceExchange.sol";
 
 /**
  * @title OrderValidatorV1
- * @notice This contract is used to check the validity of a maker order in the LooksRareProtocol (v1).
+ * @notice This contract is used to check the validity of a maker order in the Protocol.
  *         It performs checks for:
  *         1. Nonce-related issues (e.g., nonce executed or cancelled)
  *         2. Amount-related issues (e.g. order amount being 0)
@@ -60,7 +60,7 @@ contract OrderValidatorV1 {
     // TransferManager ERC1155
     address public immutable TRANSFER_MANAGER_ERC1155;
 
-    // Domain separator from LooksRare Exchange
+    // Domain separator from Exchange
     bytes32 public immutable _DOMAIN_SEPARATOR;
 
     // Currency Manager
@@ -75,32 +75,32 @@ contract OrderValidatorV1 {
     // Transfer Selector
     ITransferSelectorNFTExtended public immutable transferSelectorNFT;
 
-    // LooksRare Exchange
-    LooksRareExchange public immutable looksRareExchange;
+    // Exchange
+    GUNftMarketplaceExchange public immutable exchange;
 
     /**
      * @notice Constructor
-     * @param _looksRareExchange address of the LooksRare exchange (v1)
+     * @param _exchange address of the exchange
      */
-    constructor(address _looksRareExchange) {
-        looksRareExchange = LooksRareExchange(_looksRareExchange);
-        _DOMAIN_SEPARATOR = LooksRareExchange(_looksRareExchange).DOMAIN_SEPARATOR();
+    constructor(address _exchange) {
+        exchange = GUNftMarketplaceExchange(_exchange);
+        _DOMAIN_SEPARATOR = GUNftMarketplaceExchange(_exchange).DOMAIN_SEPARATOR();
 
         TRANSFER_MANAGER_ERC721 = ITransferSelectorNFTExtended(
-            address(LooksRareExchange(_looksRareExchange).transferSelectorNFT())
+            address(GUNftMarketplaceExchange(_exchange).transferSelectorNFT())
         ).TRANSFER_MANAGER_ERC721();
 
         TRANSFER_MANAGER_ERC1155 = ITransferSelectorNFTExtended(
-            address(LooksRareExchange(_looksRareExchange).transferSelectorNFT())
+            address(GUNftMarketplaceExchange(_exchange).transferSelectorNFT())
         ).TRANSFER_MANAGER_ERC1155();
 
-        currencyManager = LooksRareExchange(_looksRareExchange).currencyManager();
-        executionManager = LooksRareExchange(_looksRareExchange).executionManager();
+        currencyManager = GUNftMarketplaceExchange(_exchange).currencyManager();
+        executionManager = GUNftMarketplaceExchange(_exchange).executionManager();
         transferSelectorNFT = ITransferSelectorNFTExtended(
-            address(LooksRareExchange(_looksRareExchange).transferSelectorNFT())
+            address(GUNftMarketplaceExchange(_exchange).transferSelectorNFT())
         );
         IRoyaltyFeeManagerExtended royaltyFeeManager = IRoyaltyFeeManagerExtended(
-            address(LooksRareExchange(_looksRareExchange).royaltyFeeManager())
+            address(GUNftMarketplaceExchange(_exchange).royaltyFeeManager())
         );
         royaltyFeeRegistry = royaltyFeeManager.royaltyFeeRegistry();
     }
@@ -155,10 +155,9 @@ contract OrderValidatorV1 {
         view
         returns (uint256 validationCode)
     {
-        if (looksRareExchange.isUserOrderNonceExecutedOrCancelled(makerOrder.signer, makerOrder.nonce))
+        if (exchange.isUserOrderNonceExecutedOrCancelled(makerOrder.signer, makerOrder.nonce))
             return NONCE_EXECUTED_OR_CANCELLED;
-        if (makerOrder.nonce < looksRareExchange.userMinOrderNonce(makerOrder.signer))
-            return NONCE_BELOW_MIN_ORDER_NONCE;
+        if (makerOrder.nonce < exchange.userMinOrderNonce(makerOrder.signer)) return NONCE_BELOW_MIN_ORDER_NONCE;
     }
 
     /**
@@ -343,8 +342,7 @@ contract OrderValidatorV1 {
         uint256 price
     ) internal view returns (uint256 validationCode) {
         if (IERC20(currency).balanceOf(user) < price) return ERC20_BALANCE_INFERIOR_TO_PRICE;
-        if (IERC20(currency).allowance(user, address(looksRareExchange)) < price)
-            return ERC20_APPROVAL_INFERIOR_TO_PRICE;
+        if (IERC20(currency).allowance(user, address(exchange)) < price) return ERC20_APPROVAL_INFERIOR_TO_PRICE;
     }
 
     /**

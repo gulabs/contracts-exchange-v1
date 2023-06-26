@@ -1,8 +1,8 @@
 {
-  "name": "@looksrare/contracts-exchange-v1",
-  "version": "1.4.1",
-  "description": "LooksRare exchange smart contracts (v1)",
-  "author": "LooksRare",
+  "name": "@gu-nft-marketplace/contracts",
+  "version": "0.9.0",
+  "description": "G.U.NFT marketplace exchange smart contracts",
+  "author": "gulabs",
   "license": "MIT",
   "private": false,
   "files": [
@@ -16,26 +16,28 @@
     "/contracts/transferManagers/*.sol"
   ],
   "keywords": [
-    "looksrare"
+    "contracts",
+    "nft",
+    "marketplace"
   ],
   "engines": {
     "node": ">=8.3.0"
   },
-  "homepage": "https://looksrare.org/",
-  "bugs": "https://github.com/LooksRare/contracts-exchange-v1/issues",
+  "homepage": "https://www.gu.net/",
+  "bugs": "https://github.com/gulabs/gu-nft-marketplace-contracts/issues",
   "repository": {
     "type": "git",
-    "url": "https://github.com/LooksRare/contracts-exchange-v1.git"
+    "url": "https://github.com/gulabs/gu-nft-marketplace-contracts.git"
   },
   "publishConfig": {
     "access": "public",
-    "registry": "https://registry.npmjs.org"
+    "registry": "https://test.gusdk.gu.net"
   },
   "scripts": {
     "compile": "hardhat compile",
     "compile:force": "hardhat compile --force",
     "format:check": "prettier --check '**/*.{js,jsx,ts,tsx,sol,json,yaml,md}'",
-    "format:write": "prettier --write '**/*.{js,jsx,ts,tsx,json,yaml,md}'",
+    "format:write": "prettier --write '**/*.{js,jsx,ts,tsx,sol,json,yaml,md}'",
     "lint": "eslint '**/*.{js,jsx,ts,tsx}'",
     "prepare": "husky install",
     "test": "hardhat test",
