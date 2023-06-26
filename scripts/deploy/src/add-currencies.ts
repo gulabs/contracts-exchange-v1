@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import env from "./load-env";
 
-export default async function addWETHCurrency(currencyManager: string, weth: string): Promise<void> {
+export default async function addCurrencies(currencyManager: string, { weth }: { weth: string }): Promise<void> {
   const CurrencyManager = await ethers.getContractFactory("CurrencyManager");
   const currencyManager_ = CurrencyManager.attach(currencyManager);
 

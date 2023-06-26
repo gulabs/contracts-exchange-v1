@@ -16,7 +16,7 @@ const { defaultAbiCoder, keccak256, solidityPack } = utils;
  * @param signer signer
  * @param types solidity types of the value param
  * @param values params to be sent to the Solidity function
- * @param verifyingContract verifying contract address ("LooksRareExchange")
+ * @param verifyingContract verifying contract address ("GUNftMarketplaceExchange")
  * @returns splitted signature
  * @see https://docs.ethers.io/v5/api/signer/#Signer-signTypedData
  */
@@ -27,7 +27,7 @@ const signTypedData = async (
   verifyingContract: string
 ): Promise<Signature> => {
   const domain: TypedDataDomain = {
-    name: "LooksRareExchange",
+    name: "GUNftMarketplaceExchange",
     version: "1",
     chainId: "31337", // HRE
     verifyingContract: verifyingContract,
@@ -49,7 +49,7 @@ const signTypedData = async (
 
 export const computeDomainSeparator = (verifyingContract: string): string => {
   const domain: TypedDataDomain = {
-    name: "LooksRareExchange",
+    name: "GUNftMarketplaceExchange",
     version: "1",
     chainId: "31337", // HRE
     verifyingContract: verifyingContract,

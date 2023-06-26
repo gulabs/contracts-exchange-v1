@@ -8,7 +8,7 @@ export async function tokenSetUp(
   mockERC721: Contract,
   mockERC721WithRoyalty: Contract,
   mockERC1155: Contract,
-  looksRareExchange: Contract,
+  exchange: Contract,
   transferManagerERC721: Contract,
   transferManagerERC1155: Contract
 ): Promise<void> {
@@ -17,7 +17,7 @@ export async function tokenSetUp(
     await weth.connect(user).deposit({ value: parseEther("30") });
 
     // Set approval for WETH
-    await weth.connect(user).approve(looksRareExchange.address, constants.MaxUint256);
+    await weth.connect(user).approve(exchange.address, constants.MaxUint256);
 
     // Each user mints 1 ERC721 NFT
     await mockERC721.connect(user).mint(user.address);

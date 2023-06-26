@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import env from "./load-env";
 
-export default async function deployLooksRareExchange({
+export default async function deployExchange({
   currencyManager,
   executionManager,
   royaltyFeeManager,
@@ -12,7 +12,7 @@ export default async function deployLooksRareExchange({
   royaltyFeeManager: string;
   weth: string;
 }): Promise<string> {
-  console.log("\nDeploy LooksRareExchange with following parameters:");
+  console.log("\nDeploy Exchange with following parameters:");
   console.log(`
     currencyManager: ${currencyManager},
     executionManager: ${executionManager},
@@ -20,15 +20,15 @@ export default async function deployLooksRareExchange({
     weth: ${weth},
     FEE_RECEIPT_ADDRESS: ${env.FEE_RECEIPT_ADDRESS}
   `);
-  const LooksRareExchange = await ethers.getContractFactory("LooksRareExchange");
-  const looksRareExchange = await LooksRareExchange.deploy(
+  const Exchange = await ethers.getContractFactory("GUNftMarketplaceExchange");
+  const exchange = await Exchange.deploy(
     currencyManager,
     executionManager,
     royaltyFeeManager,
     weth,
     env.FEE_RECEIPT_ADDRESS
   );
-  await looksRareExchange.deployed();
-  console.log("LooksRareExchange deployed to:", looksRareExchange.address);
-  return looksRareExchange.address;
+  await exchange.deployed();
+  console.log("Exchange deployed to:", exchange.address);
+  return exchange.address;
 }

@@ -61,7 +61,7 @@ const validations = {
 
   FEE_RECEIPT_ADDRESS: addressValidator(),
 
-  LOOKS_RARE_EXCHANGE_OWNER_ADDRESS: addressValidator(),
+  GU_NFT_MARKETPLACE_EXCHANGE_OWNER_ADDRESS: addressValidator(),
 
   TRANSFER_MANAGER_ERC721_ADDRESS: optionalAddressValidator(),
   TRANSFER_MANAGER_ERC1155_ADDRESS: optionalAddressValidator(),

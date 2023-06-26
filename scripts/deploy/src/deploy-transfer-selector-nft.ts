@@ -1,15 +1,15 @@
 import { ethers } from "hardhat";
 import env from "./load-env";
 
-export default async function deployTransferSelectorNFT(looksRareExchange: string): Promise<string> {
+export default async function deployTransferSelectorNFT(exchange: string): Promise<string> {
   // 1. TransferManagerERC721
   let transferManagerERC721 = env.TRANSFER_MANAGER_ERC721_ADDRESS;
 
   if (!transferManagerERC721) {
     console.log("\nDeploy TransferManagerERC721 with following parameters:");
-    console.log(`looksRareExchange: ${looksRareExchange}`);
+    console.log(`Exchange: ${exchange}`);
     const TransferManagerERC721 = await ethers.getContractFactory("TransferManagerERC721");
-    const transferManagerERC721_ = await TransferManagerERC721.deploy(looksRareExchange);
+    const transferManagerERC721_ = await TransferManagerERC721.deploy(exchange);
     await transferManagerERC721_.deployed();
 
     transferManagerERC721 = transferManagerERC721_.address;
@@ -24,10 +24,10 @@ export default async function deployTransferSelectorNFT(looksRareExchange: strin
   if (!transferManagerERC1155) {
     console.log("\nDeploy TransferManagerERC1155 with following parameters:");
     console.log(`
-      looksRareExchange: ${looksRareExchange}
+      Exchange: ${exchange}
     `);
     const TransferManagerERC1155 = await ethers.getContractFactory("TransferManagerERC1155");
-    const transferManagerERC1155_ = await TransferManagerERC1155.deploy(looksRareExchange);
+    const transferManagerERC1155_ = await TransferManagerERC1155.deploy(exchange);
     await transferManagerERC1155_.deployed();
 
     transferManagerERC1155 = transferManagerERC1155_.address;
@@ -45,10 +45,10 @@ export default async function deployTransferSelectorNFT(looksRareExchange: strin
   if (!transferManagerNonCompliantERC721) {
     console.log("\nDeploy TransferManagerNonCompliantERC721 with following parameters:");
     console.log(`
-      looksRareExchange: ${looksRareExchange}
+      Exchange: ${exchange}
     `);
     const TransferManagerNonCompliantERC721 = await ethers.getContractFactory("TransferManagerNonCompliantERC721");
-    const transferManagerNonCompliantERC721_ = await TransferManagerNonCompliantERC721.deploy(looksRareExchange);
+    const transferManagerNonCompliantERC721_ = await TransferManagerNonCompliantERC721.deploy(exchange);
     await transferManagerNonCompliantERC721_.deployed();
 
     transferManagerNonCompliantERC721 = transferManagerNonCompliantERC721_.address;

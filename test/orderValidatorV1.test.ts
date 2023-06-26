@@ -34,7 +34,7 @@ describe("OrderValidatorV1 (additional tests)", () => {
   let transferManagerNonCompliantERC721: Contract;
   let transferSelectorNFT: Contract;
   let royaltyFeeSetter: Contract;
-  let looksRareExchange: Contract;
+  let exchange: Contract;
   let orderValidatorV1: Contract;
 
   // Strategy contracts (used for this test file)
@@ -70,7 +70,7 @@ describe("OrderValidatorV1 (additional tests)", () => {
       transferManagerERC721,
       transferManagerERC1155,
       transferManagerNonCompliantERC721,
-      looksRareExchange,
+      exchange,
       strategyStandardSaleForFixedPrice,
       strategyAnyItemFromCollectionForFixedPrice,
       ,
@@ -86,7 +86,7 @@ describe("OrderValidatorV1 (additional tests)", () => {
     endTimeOrder = startTimeOrder.add(BigNumber.from("1000"));
 
     const OrderValidatorV1 = await ethers.getContractFactory("OrderValidatorV1");
-    orderValidatorV1 = await OrderValidatorV1.deploy(looksRareExchange.address);
+    orderValidatorV1 = await OrderValidatorV1.deploy(exchange.address);
     await orderValidatorV1.deployed();
   });
 
@@ -97,7 +97,7 @@ describe("OrderValidatorV1 (additional tests)", () => {
       mockERC721,
       mockERC721WithRoyalty,
       mockERC1155,
-      looksRareExchange,
+      exchange,
       transferManagerERC721,
       transferManagerERC1155
     );
@@ -120,7 +120,7 @@ describe("OrderValidatorV1 (additional tests)", () => {
       minPercentageToAsk: constants.Zero,
       params: defaultAbiCoder.encode([], []),
       signerUser: makerUser,
-      verifyingContract: looksRareExchange.address,
+      verifyingContract: exchange.address,
     });
 
     // 2. Standard maker ask
@@ -139,7 +139,7 @@ describe("OrderValidatorV1 (additional tests)", () => {
       minPercentageToAsk: constants.Zero,
       params: defaultAbiCoder.encode([], []),
       signerUser: makerUser,
-      verifyingContract: looksRareExchange.address,
+      verifyingContract: exchange.address,
     });
 
     assertMultipleOrdersValid([makerBidOrder, makerAskOrder], orderValidatorV1);
@@ -164,7 +164,7 @@ describe("OrderValidatorV1 (additional tests)", () => {
       minPercentageToAsk: constants.Zero,
       params: defaultAbiCoder.encode([], []),
       signerUser: makerBidUser,
-      verifyingContract: looksRareExchange.address,
+      verifyingContract: exchange.address,
     });
 
     // 1. No WETH
@@ -174,10 +174,10 @@ describe("OrderValidatorV1 (additional tests)", () => {
     // 2. Approval allowance inferior to bid price
     await assertErrorCode(makerBidOrder, ERC20_APPROVAL_INFERIOR_TO_PRICE, orderValidatorV1);
     // Approval allowance lower than price
-    await weth.connect(makerBidUser).approve(looksRareExchange.address, makerBidOrder.price.sub("1"));
+    await weth.connect(makerBidUser).approve(exchange.address, makerBidOrder.price.sub("1"));
     await assertErrorCode(makerBidOrder, ERC20_APPROVAL_INFERIOR_TO_PRICE, orderValidatorV1);
     // Approval allowance equal to price
-    await weth.connect(makerBidUser).approve(looksRareExchange.address, makerBidOrder.price);
+    await weth.connect(makerBidUser).approve(exchange.address, makerBidOrder.price);
     await assertOrderValid(makerBidOrder, orderValidatorV1);
   });
 
@@ -201,7 +201,7 @@ describe("OrderValidatorV1 (additional tests)", () => {
       minPercentageToAsk: constants.Zero,
       params: defaultAbiCoder.encode([], []),
       signerUser: makerAskUser,
-      verifyingContract: looksRareExchange.address,
+      verifyingContract: exchange.address,
     });
 
     await assertErrorCode(makerAskOrder, ERC721_TOKEN_ID_DOES_NOT_EXIST, orderValidatorV1);
@@ -247,7 +247,7 @@ describe("OrderValidatorV1 (additional tests)", () => {
       minPercentageToAsk: constants.Zero,
       params: defaultAbiCoder.encode([], []),
       signerUser: makerAskUser,
-      verifyingContract: looksRareExchange.address,
+      verifyingContract: exchange.address,
     });
 
     await assertErrorCode(makerAskOrder, ERC1155_BALANCE_OF_TOKEN_ID_INFERIOR_TO_AMOUNT, orderValidatorV1);
@@ -292,7 +292,7 @@ describe("OrderValidatorV1 (additional tests)", () => {
       minPercentageToAsk: BigNumber.from("9800"),
       params: defaultAbiCoder.encode([], []),
       signerUser: makerAskUser,
-      verifyingContract: looksRareExchange.address,
+      verifyingContract: exchange.address,
     });
 
     await assertErrorCode(makerAskOrder, CUSTOM_TRANSFER_MANAGER, orderValidatorV1);
@@ -305,7 +305,7 @@ describe("OrderValidatorV1 (additional tests)", () => {
       mockERC721,
       mockERC721WithRoyalty,
       mockERC1155,
-      looksRareExchange,
+      exchange,
       transferManagerERC721,
       transferManagerERC1155
     );
@@ -329,7 +329,7 @@ describe("OrderValidatorV1 (additional tests)", () => {
       minPercentageToAsk: BigNumber.from("9801"), // Protocol fee is 2%
       params: defaultAbiCoder.encode([], []),
       signerUser: makerAskUser,
-      verifyingContract: looksRareExchange.address,
+      verifyingContract: exchange.address,
     });
 
     await assertErrorCode(makerAskOrder, MIN_NET_RATIO_ABOVE_PROTOCOL_FEE, orderValidatorV1);
@@ -355,7 +355,7 @@ describe("OrderValidatorV1 (additional tests)", () => {
       minPercentageToAsk: BigNumber.from("9701"), // Protocol fee is 2% and royalty is set at 1%
       params: defaultAbiCoder.encode([], []),
       signerUser: makerAskUser,
-      verifyingContract: looksRareExchange.address,
+      verifyingContract: exchange.address,
     });
 
     await assertErrorCode(makerAskOrder, MIN_NET_RATIO_ABOVE_ROYALTY_FEE_REGISTRY_AND_PROTOCOL_FEE, orderValidatorV1);
@@ -376,7 +376,7 @@ describe("OrderValidatorV1 (additional tests)", () => {
       minPercentageToAsk: BigNumber.from("9701"), // Protocol fee is 2% and royalty fee is 1%
       params: defaultAbiCoder.encode([], []),
       signerUser: makerAskUser,
-      verifyingContract: looksRareExchange.address,
+      verifyingContract: exchange.address,
     });
 
     await assertErrorCode(makerAskOrder, MIN_NET_RATIO_ABOVE_ROYALTY_FEE_ERC2981_AND_PROTOCOL_FEE, orderValidatorV1);

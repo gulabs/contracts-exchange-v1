@@ -1,8 +1,8 @@
-# @looksrare/contracts-exchange-v1
+# @gu-nft-marketplace/contracts
 
 ## Description
 
-This project contains all smart contracts used for the current LooksRare exchange ("v1"). This includes:
+This project contains all smart contracts used for the G.U.NFT marketplace. This includes:
 
 - core exchange contract
 - libraries
@@ -17,68 +17,46 @@ It also contains a peripheral contract (`OrderValidatorV1`) that is used to veri
 
 ```shell
 # Yarn
-yarn add @looksrare/contracts-exchange-v1
+yarn add  @gu-nft-marketplace/contracts
 
 # NPM
-npm install @looksrare/contracts-exchange-v1
+npm install @gu-nft-marketplace/contracts
 ```
 
-## NPM package
+## Deployments
 
-The NPM package contains the following:
+### Initialize
 
-- Solidity smart contracts (_".sol"_)
-- ABI files (_".json"_)
-
-## Documentation
-
-The documentation for the exchange smart contracts is available [here](https://docs.looksrare.org/developers/category/exchange-contracts).
-
-## About this repo
-
-### Structure
-
-It is a hybrid [Hardhat](https://hardhat.org/) repo that also requires [Foundry](https://book.getfoundry.sh/index.html) to run Solidity tests powered by the [ds-test library](https://github.com/dapphub/ds-test/).
-
-> To install Foundry, please follow the instructions [here](https://book.getfoundry.sh/getting-started/installation.html).
-
-### Run tests
-
-- TypeScript tests are included in the `test` folder at the root of this repo.
-- Solidity tests are included in the `test` folder in the `contracts` folder.
-
-### Example of Foundry/Forge commands
+- sub-modules
 
 ```shell
-forge build
-forge test
-forge test -vv
-forge tree
+git submodule update --init --recursive
 ```
 
-### Example of Hardhat commands
+- dependencies
 
 ```shell
-npx hardhat accounts
-npx hardhat compile
-npx hardhat clean
-npx hardhat test
-npx hardhat node
-npx hardhat help
-REPORT_GAS=true npx hardhat test
-npx hardhat coverage
-npx hardhat run scripts/deploy.ts
-TS_NODE_FILES=true npx ts-node scripts/deploy.ts
-npx eslint '**/*.{js,ts}'
-npx eslint '**/*.{js,ts}' --fix
-npx prettier '**/*.{json,sol,md}' --check
-npx prettier '**/*.{json,sol,md}' --write
-npx solhint 'contracts/**/*.sol'
-npx solhint 'contracts/**/*.sol' --fix
+yarn
 ```
 
-## Release
+### Test
 
-- Create a [Personal access token](https://github.com/settings/tokens/new?scopes=repo&description=release-it) (Don't change the default scope)
-- Create an `.env` (copy `.env.template`) and set your GitHub personal access token.
-- `yarn release` will run all the checks, build, and publish the package, and publish the GitHub release note.
+```shell
+yarn test
+```
+
+### Deploy
+
+- Modify `.env` in `scripts/deploy`
+- Deploy
+
+```shell
+yarn deploy # hardhat node
+yarn deploy --network gusandbox # gusandbox
+```
+
+### Verify contracts
+
+```shell
+npx hardhat verify --network gusandbox <address> <params>
+```

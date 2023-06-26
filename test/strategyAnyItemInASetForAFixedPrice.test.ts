@@ -24,7 +24,7 @@ describe("Strategy - AnyItemInASetForFixedPrice ('Trait orders')", () => {
   // Exchange contracts
   let transferManagerERC721: Contract;
   let transferManagerERC1155: Contract;
-  let looksRareExchange: Contract;
+  let exchange: Contract;
 
   // Strategy contract
   let strategyAnyItemInASetForFixedPrice: Contract;
@@ -58,7 +58,7 @@ describe("Strategy - AnyItemInASetForFixedPrice ('Trait orders')", () => {
       transferManagerERC721,
       transferManagerERC1155,
       ,
-      looksRareExchange,
+      exchange,
       ,
       ,
       ,
@@ -75,13 +75,13 @@ describe("Strategy - AnyItemInASetForFixedPrice ('Trait orders')", () => {
       mockERC721,
       mockERC721WithRoyalty,
       mockERC1155,
-      looksRareExchange,
+      exchange,
       transferManagerERC721,
       transferManagerERC1155
     );
 
     // Verify the domain separator is properly computed
-    assert.equal(await looksRareExchange.DOMAIN_SEPARATOR(), computeDomainSeparator(looksRareExchange.address));
+    assert.equal(await exchange.DOMAIN_SEPARATOR(), computeDomainSeparator(exchange.address));
 
     // Set up defaults startTime/endTime (for orders)
     startTimeOrder = BigNumber.from((await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp);
@@ -125,7 +125,7 @@ describe("Strategy - AnyItemInASetForFixedPrice ('Trait orders')", () => {
       minPercentageToAsk: constants.Zero,
       params: defaultAbiCoder.encode(["bytes32"], [hexRoot]),
       signerUser: makerBidUser,
-      verifyingContract: looksRareExchange.address,
+      verifyingContract: exchange.address,
     });
 
     const takerAskOrder = createTakerOrder({
@@ -137,9 +137,9 @@ describe("Strategy - AnyItemInASetForFixedPrice ('Trait orders')", () => {
       params: defaultAbiCoder.encode(["bytes32[]"], [hexProof]),
     });
 
-    const tx = await looksRareExchange.connect(takerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder);
+    const tx = await exchange.connect(takerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder);
     await expect(tx)
-      .to.emit(looksRareExchange, "TakerAsk")
+      .to.emit(exchange, "TakerAsk")
       .withArgs(
         computeOrderHash(makerBidOrder),
         makerBidOrder.nonce,
@@ -154,9 +154,7 @@ describe("Strategy - AnyItemInASetForFixedPrice ('Trait orders')", () => {
       );
 
     assert.equal(await mockERC721.ownerOf("2"), makerBidUser.address);
-    assert.isTrue(
-      await looksRareExchange.isUserOrderNonceExecutedOrCancelled(makerBidUser.address, makerBidOrder.nonce)
-    );
+    assert.isTrue(await exchange.isUserOrderNonceExecutedOrCancelled(makerBidUser.address, makerBidOrder.nonce));
   });
 
   it("ERC721 - TokenIds not in the set cannot be sold", async () => {
@@ -196,7 +194,7 @@ describe("Strategy - AnyItemInASetForFixedPrice ('Trait orders')", () => {
       minPercentageToAsk: constants.Zero,
       params: defaultAbiCoder.encode(["bytes32"], [hexRoot]),
       signerUser: makerBidUser,
-      verifyingContract: looksRareExchange.address,
+      verifyingContract: exchange.address,
     });
 
     for (const tokenId of Array.from(Array(9).keys())) {
@@ -212,7 +210,7 @@ describe("Strategy - AnyItemInASetForFixedPrice ('Trait orders')", () => {
         });
 
         await expect(
-          looksRareExchange.connect(takerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder)
+          exchange.connect(takerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder)
         ).to.be.revertedWith("Strategy: Execution invalid");
       }
     }
@@ -237,7 +235,7 @@ describe("Strategy - AnyItemInASetForFixedPrice ('Trait orders')", () => {
       minPercentageToAsk: constants.Zero,
       params: defaultAbiCoder.encode([], []), // these parameters are used after it reverts
       signerUser: makerAskUser,
-      verifyingContract: looksRareExchange.address,
+      verifyingContract: exchange.address,
     });
 
     const takerBidOrder = {
@@ -249,8 +247,8 @@ describe("Strategy - AnyItemInASetForFixedPrice ('Trait orders')", () => {
       params: defaultAbiCoder.encode([], []),
     };
 
-    await expect(
-      looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder)
-    ).to.be.revertedWith("Strategy: Execution invalid");
+    await expect(exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder)).to.be.revertedWith(
+      "Strategy: Execution invalid"
+    );
   });
 });

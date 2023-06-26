@@ -21,7 +21,7 @@ describe("Strategy - PrivateSale", () => {
   // Exchange contracts
   let transferManagerERC721: Contract;
   let transferManagerERC1155: Contract;
-  let looksRareExchange: Contract;
+  let exchange: Contract;
 
   // Strategy contract
   let strategyPrivateSale: Contract;
@@ -55,7 +55,7 @@ describe("Strategy - PrivateSale", () => {
       transferManagerERC721,
       transferManagerERC1155,
       ,
-      looksRareExchange,
+      exchange,
       ,
       ,
       ,
@@ -72,13 +72,13 @@ describe("Strategy - PrivateSale", () => {
       mockERC721,
       mockERC721WithRoyalty,
       mockERC1155,
-      looksRareExchange,
+      exchange,
       transferManagerERC721,
       transferManagerERC1155
     );
 
     // Verify the domain separator is properly computed
-    assert.equal(await looksRareExchange.DOMAIN_SEPARATOR(), computeDomainSeparator(looksRareExchange.address));
+    assert.equal(await exchange.DOMAIN_SEPARATOR(), computeDomainSeparator(exchange.address));
 
     // Set up defaults startTime/endTime (for orders)
     startTimeOrder = BigNumber.from((await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp);
@@ -105,7 +105,7 @@ describe("Strategy - PrivateSale", () => {
       minPercentageToAsk: constants.Zero,
       params: defaultAbiCoder.encode(["address"], [takerBidUser.address]),
       signerUser: makerAskUser,
-      verifyingContract: looksRareExchange.address,
+      verifyingContract: exchange.address,
     });
 
     let takerBidOrder = createTakerOrder({
@@ -119,14 +119,14 @@ describe("Strategy - PrivateSale", () => {
 
     // User 3 cannot buy since the order target is only taker user
     await expect(
-      looksRareExchange.connect(wrongUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
+      exchange.connect(wrongUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
         value: takerBidOrder.price,
       })
     ).to.be.revertedWith("Strategy: Execution invalid");
 
-    await expect(
-      looksRareExchange.connect(wrongUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder)
-    ).to.be.revertedWith("Strategy: Execution invalid");
+    await expect(exchange.connect(wrongUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder)).to.be.revertedWith(
+      "Strategy: Execution invalid"
+    );
 
     takerBidOrder = createTakerOrder({
       isOrderAsk: false,
@@ -139,9 +139,9 @@ describe("Strategy - PrivateSale", () => {
 
     assert.deepEqual(await weth.balanceOf(feeRecipient.address), constants.Zero);
 
-    const tx = await looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
+    const tx = await exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
     await expect(tx)
-      .to.emit(looksRareExchange, "TakerBid")
+      .to.emit(exchange, "TakerBid")
       .withArgs(
         computeOrderHash(makerAskOrder),
         makerAskOrder.nonce,
@@ -156,9 +156,7 @@ describe("Strategy - PrivateSale", () => {
       );
 
     assert.equal(await mockERC721.ownerOf(constants.Zero), takerBidUser.address);
-    assert.isTrue(
-      await looksRareExchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce)
-    );
+    assert.isTrue(await exchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce));
     // Verify balance of treasury (aka feeRecipient) is 0
     assert.deepEqual(await weth.balanceOf(feeRecipient.address), constants.Zero);
   });
@@ -183,7 +181,7 @@ describe("Strategy - PrivateSale", () => {
       minPercentageToAsk: constants.Zero,
       params: defaultAbiCoder.encode(["address"], [takerBidUser.address]),
       signerUser: makerAskUser,
-      verifyingContract: looksRareExchange.address,
+      verifyingContract: exchange.address,
     });
 
     let takerBidOrder = createTakerOrder({
@@ -197,14 +195,14 @@ describe("Strategy - PrivateSale", () => {
 
     // User 3 cannot buy since the order target is only taker user
     await expect(
-      looksRareExchange.connect(wrongUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
+      exchange.connect(wrongUser).matchAskWithTakerBidUsingETHAndWETH(takerBidOrder, makerAskOrder, {
         value: takerBidOrder.price,
       })
     ).to.be.revertedWith("Strategy: Execution invalid");
 
-    await expect(
-      looksRareExchange.connect(wrongUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder)
-    ).to.be.revertedWith("Strategy: Execution invalid");
+    await expect(exchange.connect(wrongUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder)).to.be.revertedWith(
+      "Strategy: Execution invalid"
+    );
 
     takerBidOrder = createTakerOrder({
       isOrderAsk: false,
@@ -217,9 +215,9 @@ describe("Strategy - PrivateSale", () => {
 
     assert.deepEqual(await weth.balanceOf(feeRecipient.address), constants.Zero);
 
-    const tx = await looksRareExchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
+    const tx = await exchange.connect(takerBidUser).matchAskWithTakerBid(takerBidOrder, makerAskOrder);
     await expect(tx)
-      .to.emit(looksRareExchange, "TakerBid")
+      .to.emit(exchange, "TakerBid")
       .withArgs(
         computeOrderHash(makerAskOrder),
         makerAskOrder.nonce,
@@ -234,9 +232,7 @@ describe("Strategy - PrivateSale", () => {
       );
 
     assert.equal(await mockERC721.ownerOf(constants.Zero), takerBidUser.address);
-    assert.isTrue(
-      await looksRareExchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce)
-    );
+    assert.isTrue(await exchange.isUserOrderNonceExecutedOrCancelled(makerAskUser.address, makerAskOrder.nonce));
     // Verify balance of treasury (aka feeRecipient) is 0
     assert.deepEqual(await weth.balanceOf(feeRecipient.address), constants.Zero);
   });
@@ -260,7 +256,7 @@ describe("Strategy - PrivateSale", () => {
       minPercentageToAsk: constants.Zero,
       params: defaultAbiCoder.encode([], []),
       signerUser: takerBidUser,
-      verifyingContract: looksRareExchange.address,
+      verifyingContract: exchange.address,
     });
 
     const takerAskOrder: TakerOrder = {
@@ -272,8 +268,8 @@ describe("Strategy - PrivateSale", () => {
       params: defaultAbiCoder.encode([], []),
     };
 
-    await expect(
-      looksRareExchange.connect(makerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder)
-    ).to.be.revertedWith("Strategy: Execution invalid");
+    await expect(exchange.connect(makerAskUser).matchBidWithTakerAsk(takerAskOrder, makerBidOrder)).to.be.revertedWith(
+      "Strategy: Execution invalid"
+    );
   });
 });
