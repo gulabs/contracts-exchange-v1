@@ -1,5 +1,5 @@
 {
-  "name": "@gu-nft-marketplace/contracts",
+  "name": "@gulabs/gu-nft-marketplace-contracts",
   "version": "0.9.0",
   "description": "G.U.NFT marketplace exchange smart contracts",
   "author": "gulabs",
@@ -27,11 +27,11 @@
   "bugs": "https://github.com/gulabs/gu-nft-marketplace-contracts/issues",
   "repository": {
     "type": "git",
-    "url": "https://github.com/gulabs/gu-nft-marketplace-contracts.git"
+    "url": "git@github.com:gulabs/gu-nft-marketplace-contracts.git"
   },
   "publishConfig": {
     "access": "public",
-    "registry": "https://test.gusdk.gu.net"
+    "registry": "https://registry.npmjs.org"
   },
   "scripts": {
     "compile": "hardhat compile",
